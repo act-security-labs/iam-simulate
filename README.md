@@ -1,6 +1,6 @@
 # IAM Simulate
 
-[![NPM Version](https://img.shields.io/npm/v/@cloud-copilot/iam-simulate.svg?logo=nodedotjs)](https://www.npmjs.com/package/@cloud-copilot/iam-simulate) [![License: AGPL v3](https://img.shields.io/github/license/cloud-copilot/iam-simulate)](LICENSE.txt) [![GuardDog](https://github.com/cloud-copilot/iam-simulate/actions/workflows/guarddog.yml/badge.svg)](https://github.com/cloud-copilot/iam-simulate/actions/workflows/guarddog.yml) [![Known Vulnerabilities](https://snyk.io/test/github/cloud-copilot/iam-simulate/badge.svg?targetFile=package.json&style=flat-square)](https://snyk.io/test/github/cloud-copilot/iam-simulate?targetFile=package.json)
+[![NPM Version](https://img.shields.io/npm/v/@actsecurity/iam-simulate.svg?logo=nodedotjs)](https://www.npmjs.com/package/@actsecurity/iam-simulate) [![License: AGPL v3](https://img.shields.io/github/license/act-security-labs/iam-simulate)](LICENSE.txt) [![GuardDog](https://github.com/act-security-labs/iam-simulate/actions/workflows/guarddog.yml/badge.svg)](https://github.com/act-security-labs/iam-simulate/actions/workflows/guarddog.yml) [![Known Vulnerabilities](https://snyk.io/test/github/act-security-labs/iam-simulate/badge.svg?targetFile=package.json&style=flat-square)](https://snyk.io/test/github/act-security-labs/iam-simulate?targetFile=package.json)
 
 An AWS IAM Simulator and Policy Tester built as a Node/Typescript library.
 
@@ -21,8 +21,8 @@ The simulator currently supports these features of AWS IAM
 
 iam-simulate will automatically validate inputs including
 
-- IAM policies using [iam-policy](https://github.com/cloud-copilot/iam-policy)
-- IAM Actions using [iam-data](https://github.com/cloud-copilot/iam-data)
+- IAM policies using [iam-policy](https://github.com/act-security-labs/iam-policy)
+- IAM Actions using [iam-data](https://github.com/act-security-labs/iam-data)
 - The resource ARN against allowed resource types for the action
 - The context keys allowed for the action/resource and their types.
 
@@ -45,7 +45,7 @@ It will also return "explains" for each statement that was evaluated, detailing 
 Use `anonymousPrincipal` to simulate unsigned requests, such as public S3 object access granted by a bucket policy. Anonymous requests do not have identity policies, session policies, permission boundaries, or SCPs; those principal-side policy inputs are rejected by `runSimulation`.
 
 ```typescript
-import { anonymousPrincipal, runSimulation, type Simulation } from '@cloud-copilot/iam-simulate'
+import { anonymousPrincipal, runSimulation, type Simulation } from '@actsecurity/iam-simulate'
 
 const simulation: Simulation = {
   request: {
@@ -96,13 +96,13 @@ When enabled, public S3 bucket policies can block anonymous and cross-account ac
 ## Installation
 
 ```bash
-npm install @cloud-copilot/iam-simulate
+npm install @actsecurity/iam-simulate
 ```
 
 ## Usage
 
 ```typescript
-import { runSimulation, type Simulation } from '@cloud-copilot/iam-simulate'
+import { runSimulation, type Simulation } from '@actsecurity/iam-simulate'
 
 const simulation: Simulation = {
   identityPolicies: [

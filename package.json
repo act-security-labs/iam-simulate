@@ -4,7 +4,7 @@
   "description": "Simulate evaluation of AWS IAM policies",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actsecurity/iam-simulate.git"
+    "url": "git+https://github.com/act-security-labs/iam-simulate.git"
   },
   "exports": {
     ".": {
@@ -31,9 +31,9 @@
   "author": "David Kerber <dave@cloudcopilot.io>",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/actsecurity/iam-simulate/issues"
+    "url": "https://github.com/act-security-labs/iam-simulate/issues"
   },
-  "homepage": "https://github.com/actsecurity/iam-simulate#readme",
+  "homepage": "https://github.com/act-security-labs/iam-simulate#readme",
   "devDependencies": {
     "@actsecurity/prettier-config": "^0.1.1",
     "@semantic-release/changelog": "^6.0.3",
