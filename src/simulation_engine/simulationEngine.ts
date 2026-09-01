@@ -1,4 +1,4 @@
-import { iamActionExists, iamServiceExists, type ResourceType } from '@cloud-copilot/iam-data'
+import { iamActionExists, iamServiceExists, type ResourceType } from '@actsecurity/iam-data'
 import {
   isValidatedPolicy,
   loadPolicy,
@@ -8,8 +8,8 @@ import {
   validateResourcePolicy,
   validateServiceControlPolicy,
   type ValidationError
-} from '@cloud-copilot/iam-policy'
-import { isAssumedRoleArn, isFederatedUserArn, isIamRoleArn } from '@cloud-copilot/iam-utils'
+} from '@actsecurity/iam-policy'
+import { isAssumedRoleArn, isFederatedUserArn, isIamRoleArn } from '@actsecurity/iam-utils'
 import { isConditionKeyArray } from '../context_keys/contextKeyTypes.js'
 import { normalizeContextKeyCase, typeForContextKey } from '../context_keys/contextKeys.js'
 import { DiscoveryContextKeyConstraints } from '../context_keys/discoveryContextKeyConstraints.js'

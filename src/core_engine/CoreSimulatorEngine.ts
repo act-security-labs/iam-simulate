@@ -1,4 +1,4 @@
-import { type Policy, type Statement } from '@cloud-copilot/iam-policy'
+import { type Policy, type Statement } from '@actsecurity/iam-policy'
 import { requestMatchesStatementActions } from '../action/action.js'
 import { type ConditionMatchResult, requestMatchesConditions } from '../condition/condition.js'
 import { allowStatementExpression, always, and, never, or } from '../analysis/allowedConditions.js'

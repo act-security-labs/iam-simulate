@@ -1,4 +1,4 @@
-import { type Condition, type Statement } from '@cloud-copilot/iam-policy'
+import { type Condition, type Statement } from '@actsecurity/iam-policy'
 import { type ConditionMatchResult } from './condition/condition.js'
 import { type StatementExplain } from './explain/statementExplain.js'
 import { type PrincipalMatchResult } from './principal/principal.js'

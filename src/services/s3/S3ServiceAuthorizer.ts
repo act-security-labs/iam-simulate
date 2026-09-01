@@ -1,4 +1,4 @@
-import { isServicePrincipal } from '@cloud-copilot/iam-utils'
+import { isServicePrincipal } from '@actsecurity/iam-utils'
 import { type RequestAnalysis } from '../../evaluate.js'
 import { DefaultServiceAuthorizer } from '../DefaultServiceAuthorizer.js'
 import { type ServiceAuthorizationRequest } from '../ServiceAuthorizer.js'

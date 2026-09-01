@@ -1,4 +1,4 @@
-import { type Condition, loadPolicy } from '@cloud-copilot/iam-policy'
+import { type Condition, loadPolicy } from '@actsecurity/iam-policy'
 import { describe, expect, it } from 'vitest'
 import {
   DiscoveryContextKeyConstraints,

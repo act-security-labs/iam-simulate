@@ -1,4 +1,4 @@
-import { loadPolicy } from '@cloud-copilot/iam-policy'
+import { loadPolicy } from '@actsecurity/iam-policy'
 import { DiscoveryContextKeyConstraints } from '../context_keys/discoveryContextKeyConstraints.js'
 import { authorize, type ControlPolicies } from '../core_engine/CoreSimulatorEngine.js'
 import { type EvaluationResult } from '../evaluate.js'

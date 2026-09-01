@@ -15,7 +15,7 @@ import {
   isIamRoleArn,
   isIamUserArn,
   isServicePrincipal
-} from '@cloud-copilot/iam-utils'
+} from '@actsecurity/iam-utils'
 import {
   type AllowedConditionExpression,
   type BlockedReason,

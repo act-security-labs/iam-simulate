@@ -11,7 +11,7 @@ import {
   iamConditionKeysForService,
   iamResourceTypeDetails,
   iamServiceExists
-} from '@cloud-copilot/iam-data'
+} from '@actsecurity/iam-data'
 import {
   createValidatedPolicy,
   validateEndpointPolicy,
@@ -20,7 +20,7 @@ import {
   validateResourcePolicy,
   validateServiceControlPolicy,
   type ValidationError
-} from '@cloud-copilot/iam-policy'
+} from '@actsecurity/iam-policy'
 import { describe, expect, it, vi } from 'vitest'
 import { anonymousPrincipal } from '../index.js'
 import type { Simulation } from './simulation.js'
@@ -31,7 +31,7 @@ import type {
   SimulationErrors
 } from './simulationEngine.js'
 
-vi.mock('@cloud-copilot/iam-data')
+vi.mock('@actsecurity/iam-data')
 
 function assertErrorResult(response: RunSimulationResults): ErrorSimulationResult {
   expect(response.resultType).toEqual('error')

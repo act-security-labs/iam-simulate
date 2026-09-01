@@ -1,4 +1,4 @@
-import { type Action, type Statement } from '@cloud-copilot/iam-policy'
+import { type Action, type Statement } from '@actsecurity/iam-policy'
 import { type ActionExplain, type StatementExplain } from '../explain/statementExplain.js'
 import { type AwsRequest } from '../request/request.js'
 

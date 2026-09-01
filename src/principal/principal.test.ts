@@ -2,7 +2,7 @@ import {
   loadPolicy,
   type NotPrincipalStatement,
   type PrincipalStatement
-} from '@cloud-copilot/iam-policy'
+} from '@actsecurity/iam-policy'
 import { describe, expect, it } from 'vitest'
 import type { SimulationParameters } from '../core_engine/CoreSimulatorEngine.js'
 import { AwsRequestImpl } from '../request/request.js'

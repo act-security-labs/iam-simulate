@@ -3,11 +3,11 @@ import {
   iamActionDetails,
   iamResourceTypeDetails,
   type ResourceType
-} from '@cloud-copilot/iam-data'
+} from '@actsecurity/iam-data'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { allowedContextKeysForRequest } from './contextKeys.js'
 
-vi.mock('@cloud-copilot/iam-data')
+vi.mock('@actsecurity/iam-data')
 
 beforeEach(() => {
   vi.resetAllMocks()

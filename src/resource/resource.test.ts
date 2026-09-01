@@ -2,7 +2,7 @@ import {
   loadPolicy,
   type NotResourceStatement,
   type ResourceStatement
-} from '@cloud-copilot/iam-policy'
+} from '@actsecurity/iam-policy'
 import { describe, expect, it } from 'vitest'
 import type { ResourceExplain } from '../explain/statementExplain.js'
 import type { PolicyType } from '../policyType.js'
