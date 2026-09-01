@@ -1,9 +1,5 @@
-import {
-  iamActionDetails,
-  iamResourceTypeDetails,
-  type ResourceType
-} from '@cloud-copilot/iam-data'
-import { mostSpecificMatchingResourceTypePatterns } from '@cloud-copilot/iam-utils'
+import { iamActionDetails, iamResourceTypeDetails, type ResourceType } from '@actsecurity/iam-data'
+import { mostSpecificMatchingResourceTypePatterns } from '@actsecurity/iam-utils'
 
 /**
  * Get the the possible resource types for an action and resource

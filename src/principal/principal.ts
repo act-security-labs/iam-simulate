@@ -1,11 +1,11 @@
-import { type Principal, type Statement } from '@cloud-copilot/iam-policy'
+import { type Principal, type Statement } from '@actsecurity/iam-policy'
 import {
   convertAssumedRoleArnToRoleArn,
   isAssumedRoleArn,
   isFederatedUserArn,
   isIamRoleArn,
   splitArnParts
-} from '@cloud-copilot/iam-utils'
+} from '@actsecurity/iam-utils'
 import { type SimulationParameters } from '../core_engine/CoreSimulatorEngine.js'
 import { type PrincipalExplain, type StatementExplain } from '../explain/statementExplain.js'
 import { type AwsRequest } from '../request/request.js'

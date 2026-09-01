@@ -2,7 +2,7 @@ import {
   type ConditionKey,
   getGlobalConditionKeyByName,
   getGlobalConditionKeyByPrefix
-} from '@cloud-copilot/iam-data'
+} from '@actsecurity/iam-data'
 
 export function getGlobalConditionKeyWithOrWithoutPrefix(key: string): ConditionKey | undefined {
   const slashIndex = key.indexOf('/')

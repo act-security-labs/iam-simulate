@@ -1,4 +1,4 @@
-import { loadPolicy } from '@cloud-copilot/iam-policy'
+import { loadPolicy } from '@actsecurity/iam-policy'
 import { readdirSync, readFileSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { describe, expect, it } from 'vitest'

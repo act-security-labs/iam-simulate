@@ -1,4 +1,4 @@
-import { type Policy, type Statement } from '@cloud-copilot/iam-policy'
+import { type Policy, type Statement } from '@actsecurity/iam-policy'
 import { splitArnParts } from '../../util.js'
 
 /**

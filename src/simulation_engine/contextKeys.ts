@@ -2,7 +2,7 @@ import {
   getAllGlobalConditionKeys,
   iamActionDetails,
   type ResourceType
-} from '@cloud-copilot/iam-data'
+} from '@actsecurity/iam-data'
 import { isS3BucketOrObjectArn, isWildcardOnlyAction, lowerCaseAll } from '../util.js'
 import { getResourceTypesForAction } from './resourceTypes.js'
 

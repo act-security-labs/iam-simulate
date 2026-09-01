@@ -1,10 +1,10 @@
-import { type ResourceType } from '@cloud-copilot/iam-data'
-import { type Statement } from '@cloud-copilot/iam-policy'
+import { type ResourceType } from '@actsecurity/iam-data'
+import { type Statement } from '@actsecurity/iam-policy'
 import {
   actionMatchesPattern,
   resourceArnWithWildcardsToRegex,
   resourceStringMatchesResourceTypePattern
-} from '@cloud-copilot/iam-utils'
+} from '@actsecurity/iam-utils'
 import { type PolicyWithName } from '../core_engine/CoreSimulatorEngine.js'
 import { expandShortArn, resourceArnsOverlap } from '../util/resourceStrings.js'
 

@@ -1,4 +1,4 @@
-import { splitArnParts } from '@cloud-copilot/iam-utils'
+import { splitArnParts } from '@actsecurity/iam-utils'
 import { type ConditionValueExplain } from '../../explain/statementExplain.js'
 import { type AwsRequest } from '../../request/request.js'
 import { convertIamString, isNotDefined } from '../../util.js'

@@ -1,10 +1,10 @@
 {
-  "name": "@cloud-copilot/iam-simulate",
+  "name": "@actsecurity/iam-simulate",
   "version": "0.1.173",
   "description": "Simulate evaluation of AWS IAM policies",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cloud-copilot/iam-simulate.git"
+    "url": "git+https://github.com/actsecurity/iam-simulate.git"
   },
   "exports": {
     ".": {
@@ -31,13 +31,14 @@
   "author": "David Kerber <dave@cloudcopilot.io>",
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/cloud-copilot/iam-simulate/issues"
+    "url": "https://github.com/actsecurity/iam-simulate/issues"
   },
-  "homepage": "https://github.com/cloud-copilot/iam-simulate#readme",
+  "homepage": "https://github.com/actsecurity/iam-simulate#readme",
   "devDependencies": {
-    "@cloud-copilot/prettier-config": "^0.1.1",
+    "@actsecurity/prettier-config": "^0.1.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/exec": "^7.1.0",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/github": "^12.0.6",
     "@semantic-release/npm": "^13.1.4",
@@ -49,11 +50,11 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@cloud-copilot/iam-data": ">=0.15.202511222 <1.0.0",
-    "@cloud-copilot/iam-policy": "^0.1.89",
-    "@cloud-copilot/iam-utils": "^0.1.78"
+    "@actsecurity/iam-data": ">=0.15.202511222 <1.0.0",
+    "@actsecurity/iam-policy": "^0.1.89",
+    "@actsecurity/iam-utils": "^0.1.78"
   },
-  "prettier": "@cloud-copilot/prettier-config",
+  "prettier": "@actsecurity/prettier-config",
   "release": {
     "branches": [
       "main"
@@ -88,6 +89,12 @@
         "@semantic-release/npm",
         {
           "npmPublish": true
+        }
+      ],
+      [
+        "@semantic-release/exec",
+        {
+          "successCmd": "echo published=true >> $GITHUB_OUTPUT && echo version=${nextRelease.version} >> $GITHUB_OUTPUT && echo package_name=$(node -p \"require('./package.json').name\") >> $GITHUB_OUTPUT"
         }
       ],
       [

@@ -1,4 +1,4 @@
-import { type Condition } from '@cloud-copilot/iam-policy'
+import { type Condition } from '@actsecurity/iam-policy'
 import {
   type AllowedConditionExpression,
   type AllowedConditionLeaf,

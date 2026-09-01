@@ -1,5 +1,5 @@
-import { iamActionDetails } from '@cloud-copilot/iam-data'
-import { type Resource } from '@cloud-copilot/iam-policy'
+import { iamActionDetails } from '@actsecurity/iam-data'
+import { type Resource } from '@actsecurity/iam-policy'
 import { type AwsRequest } from './request/request.js'
 
 const matchesNothing = new RegExp('a^')

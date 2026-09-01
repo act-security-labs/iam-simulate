@@ -1,4 +1,4 @@
-import { type Resource, type Statement } from '@cloud-copilot/iam-policy'
+import { type Resource, type Statement } from '@actsecurity/iam-policy'
 import {
   type ResourceExplain,
   resourceMismatchReasons,

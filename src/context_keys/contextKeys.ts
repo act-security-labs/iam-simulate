@@ -1,4 +1,4 @@
-import { type ConditionKey, findConditionKey } from '@cloud-copilot/iam-data'
+import { type ConditionKey, findConditionKey } from '@actsecurity/iam-data'
 import { getGlobalConditionKeyWithOrWithoutPrefix } from '../global_conditions/globalConditionKeys.js'
 import { type ConditionKeyType } from './contextKeyTypes.js'
 
