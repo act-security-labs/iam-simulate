@@ -1,8 +1,4 @@
-import {
-  iamActionDetails,
-  iamResourceTypeDetails,
-  type ResourceType
-} from '@actsecurity/iam-data'
+import { iamActionDetails, iamResourceTypeDetails, type ResourceType } from '@actsecurity/iam-data'
 import { mostSpecificMatchingResourceTypePatterns } from '@actsecurity/iam-utils'
 
 /**
