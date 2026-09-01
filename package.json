@@ -1,6 +1,6 @@
 {
   "name": "@actsecurity/iam-simulate",
-  "version": "0.1.173",
+  "version": "0.1.174",
   "description": "Simulate evaluation of AWS IAM policies",
   "repository": {
     "type": "git",

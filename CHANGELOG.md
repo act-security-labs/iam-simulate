@@ -1,3 +1,10 @@
+## [0.1.174](https://github.com/act-security-labs/iam-simulate/compare/v0.1.173...v0.1.174) (2026-09-01)
+
+
+### Features
+
+* Move to actsecurity ([7d64f6d](https://github.com/act-security-labs/iam-simulate/commit/7d64f6df40252c410cc48b790b04f655e78eaa06))
+
 ## [0.1.173](https://github.com/cloud-copilot/iam-simulate/compare/v0.1.172...v0.1.173) (2026-08-29)
 
 ## [0.1.172](https://github.com/cloud-copilot/iam-simulate/compare/v0.1.171...v0.1.172) (2026-08-22)
