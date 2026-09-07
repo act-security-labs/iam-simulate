@@ -93,7 +93,7 @@ export interface ConditionExplain {
   matches: boolean
 
   /**
-   *
+   * Matched because context key was missing from the request.
    */
   matchedBecauseMissing?: boolean
 

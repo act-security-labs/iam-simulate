@@ -169,7 +169,7 @@ export function requestMatchesConditions(
       if (normalizedStatementType === 'allow') {
         return (
           !c.explain.matches ||
-          allowMatchedOnlyByUnknownMissingKey(c) ||
+          allowHasUnknownPresenceRequirement(c) ||
           allowHasUnknownValueRequirement(c)
         )
       }
@@ -269,10 +269,7 @@ function evaluateSingleCondition(
     keyExists
   )
 
-  if (
-    condition.operation().value().toLowerCase() == 'null' ||
-    condition.operation().baseOperator()?.toLowerCase() == 'null'
-  ) {
+  if (condition.operation().value().toLowerCase() == 'null') {
     return {
       explain: testNull(condition, keyExists),
       knowledge: conditionKnowledgeForPresenceOnly(contextKeyKnowledge)
@@ -439,32 +436,47 @@ function unknownContextKeyKnowledge(): DiscoveryContextKeyKnowledge {
 }
 
 /**
- * Checks whether an Allow condition should be reported because it matched only
- * by missing-key semantics while the key's presence is unknown.
+ * Checks whether an Allow condition should be reported because Discovery does
+ * not authoritatively know whether the key is present.
  *
- * `IfExists` and `ForAllValues` operators can match missing keys. Bare negative
- * operators such as `StringNotEquals` can also match missing keys. When key
- * presence is unknown, those matches are conditional on the real request also
- * lacking the key. `ForAnyValue` missing-key evaluations do not match, so they
- * are reported through the normal non-matching Allow condition path instead.
+ * Some matching conditions are still real presence requirements when key
+ * presence is unknown. `Null` directly requires presence or absence. `IfExists`
+ * and bare negative operators can also match only because a sampled key is
+ * missing; those matches require the real request to preserve that absence.
+ * `ForAllValues` also always matches a missing key regardless of its base
+ * operator, so sampled missing-key matches are presence requirements. `ForAnyValue`
+ * missing-key evaluations do not match, so they are reported through the normal
+ * non-matching Allow condition path instead.
  *
  * @param conditionAndExplain the evaluated condition and its Discovery knowledge
- * @returns true when the condition should be surfaced as an ignored Allow condition
+ * @returns true when a matching Allow condition has an unknown-presence requirement
  */
-function allowMatchedOnlyByUnknownMissingKey(conditionAndExplain: ConditionAndExplain): boolean {
-  if (conditionAndExplain.explain.matchedBecauseMissing !== true) {
+function allowHasUnknownPresenceRequirement(conditionAndExplain: ConditionAndExplain): boolean {
+  if (conditionAndExplain.knowledge.contextKeyPresence !== 'unknown') {
     return false
   }
 
   const operation = conditionAndExplain.condition.operation()
-  if (operation.isIfExists()) {
+  if (operation.value().toLowerCase() === 'null') {
     return true
   }
-  if (operation.setOperator() === 'ForAnyValue') {
+
+  if (conditionAndExplain.explain.matchedBecauseMissing !== true) {
     return false
   }
 
+  if (operation.isIfExists()) {
+    return true
+  }
+
   const baseOperation = baseOperations[operation.baseOperator().toLowerCase()]
+  if (operation.setOperator() === 'ForAnyValue') {
+    return false
+  }
+  if (operation.setOperator() === 'ForAllValues') {
+    return true
+  }
+
   return !!baseOperation?.isNegative
 }
 
@@ -591,12 +603,14 @@ function testNull(condition: Condition, keyExists: boolean): ConditionExplain {
       matches: value.toLowerCase() === goalValue
     }
   })
+  const matches = conditionValues.some((value) => value.matches)
 
   return {
     operator: condition.operation().value(),
     conditionKeyValue: condition.conditionKey(),
     values: condition.valueIsArray() ? conditionValues : conditionValues[0],
-    matches: conditionValues.some((value) => value.matches)
+    matches,
+    matchedBecauseMissing: matches && !keyExists ? true : undefined
   }
 }
 

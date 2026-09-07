@@ -230,5 +230,166 @@
     "expected": {
       "response": "Allowed"
     }
+  },
+  {
+    "name": "Allowed with RCP VPC deny escape conditions when SourceVpc has no context key knowledge",
+    "request": {
+      "action": "s3:GetObject",
+      "resource": {
+        "resource": "arn:aws:s3:::tier-4-vpc-access/object.txt",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::tier-4-vpc-access/*"
+          }
+        ]
+      }
+    ],
+    "resourceControlPolicies": [
+      {
+        "orgIdentifier": "ou-1",
+        "policies": [
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "DenyTier4OutsideAccessVpc",
+                "Effect": "Deny",
+                "Principal": "*",
+                "Action": "s3:*",
+                "Resource": ["arn:aws:s3:::tier-4-vpc-access", "arn:aws:s3:::tier-4-vpc-access/*"],
+                "Condition": {
+                  "Null": {
+                    "aws:SourceVpc": "false"
+                  },
+                  "StringNotEquals": {
+                    "aws:SourceVpc": "vpc-00000000000000"
+                  },
+                  "BoolIfExists": {
+                    "aws:PrincipalIsAWSService": "false"
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "rcp": {
+          "deny": [
+            {
+              "key": "aws:SourceVpc",
+              "op": "Null",
+              "values": ["false"]
+            },
+            {
+              "key": "aws:SourceVpc",
+              "op": "StringNotEquals",
+              "values": ["vpc-00000000000000"]
+            },
+            {
+              "key": "aws:PrincipalIsAWSService",
+              "op": "BoolIfExists",
+              "values": ["false"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "group",
+        "operator": "or",
+        "conditions": [
+          {
+            "conditionType": "condition",
+            "op": "Null",
+            "key": "aws:SourceVpc",
+            "values": ["true"],
+            "sources": [
+              {
+                "effect": "Deny",
+                "policyIdentifier": "0",
+                "policyType": "rcp",
+                "statementIndex": 1,
+                "orgIdentifier": "ou-1",
+                "statementId": "DenyTier4OutsideAccessVpc"
+              }
+            ],
+            "inverted": true
+          },
+          {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-00000000000000"],
+            "sources": [
+              {
+                "effect": "Deny",
+                "policyIdentifier": "0",
+                "policyType": "rcp",
+                "statementIndex": 1,
+                "orgIdentifier": "ou-1",
+                "statementId": "DenyTier4OutsideAccessVpc"
+              }
+            ],
+            "inverted": true
+          },
+          {
+            "conditionType": "group",
+            "operator": "and",
+            "conditions": [
+              {
+                "conditionType": "condition",
+                "op": "Null",
+                "key": "aws:PrincipalIsAWSService",
+                "values": ["false"],
+                "sources": [
+                  {
+                    "effect": "Deny",
+                    "policyIdentifier": "0",
+                    "policyType": "rcp",
+                    "statementIndex": 1,
+                    "orgIdentifier": "ou-1",
+                    "statementId": "DenyTier4OutsideAccessVpc"
+                  }
+                ],
+                "inverted": true
+              },
+              {
+                "conditionType": "condition",
+                "op": "Bool",
+                "key": "aws:PrincipalIsAWSService",
+                "values": ["true"],
+                "sources": [
+                  {
+                    "effect": "Deny",
+                    "policyIdentifier": "0",
+                    "policyType": "rcp",
+                    "statementIndex": 1,
+                    "orgIdentifier": "ou-1",
+                    "statementId": "DenyTier4OutsideAccessVpc"
+                  }
+                ],
+                "inverted": true
+              }
+            ]
+          }
+        ]
+      }
+    }
   }
 ]

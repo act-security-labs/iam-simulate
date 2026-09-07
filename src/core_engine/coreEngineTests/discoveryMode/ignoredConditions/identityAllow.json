@@ -463,5 +463,422 @@
         ]
       }
     }
+  },
+  {
+    "name": "Allowed with Null condition when identity Allow key presence is unknown and absent",
+    "request": {
+      "action": "sts:AssumeRole",
+      "resource": {
+        "resource": "arn:aws:iam::111111111111:role/example-role",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::111111111111:role/example-role",
+            "Condition": {
+              "Null": {
+                "sts:ExternalId": "true"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "identity": {
+          "allow": [
+            {
+              "key": "sts:ExternalId",
+              "op": "Null",
+              "values": ["true"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "condition",
+        "op": "Null",
+        "key": "sts:ExternalId",
+        "values": ["true"],
+        "sources": [
+          {
+            "effect": "Allow",
+            "policyIdentifier": "0",
+            "policyType": "identity",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "Allowed with deny escape when identity Deny Null key presence is unknown and absent",
+    "request": {
+      "action": "sts:AssumeRole",
+      "resource": {
+        "resource": "arn:aws:iam::111111111111:role/example-role",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::111111111111:role/example-role"
+          },
+          {
+            "Effect": "Deny",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::111111111111:role/example-role",
+            "Condition": {
+              "Null": {
+                "sts:ExternalId": "true"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "identity": {
+          "deny": [
+            {
+              "key": "sts:ExternalId",
+              "op": "Null",
+              "values": ["true"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "condition",
+        "op": "Null",
+        "key": "sts:ExternalId",
+        "values": ["false"],
+        "sources": [
+          {
+            "effect": "Deny",
+            "policyIdentifier": "0",
+            "policyType": "identity",
+            "statementIndex": 2
+          }
+        ],
+        "inverted": true
+      }
+    }
+  },
+  {
+    "name": "Allowed with Null false condition when identity Allow key presence is unknown and present",
+    "request": {
+      "action": "sts:AssumeRole",
+      "resource": {
+        "resource": "arn:aws:iam::111111111111:role/example-role",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {
+        "sts:ExternalId": "example-external-id"
+      }
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::111111111111:role/example-role",
+            "Condition": {
+              "Null": {
+                "sts:ExternalId": "false"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "sts:ExternalId",
+          "presenceIsKnown": false,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "identity": {
+          "allow": [
+            {
+              "key": "sts:ExternalId",
+              "op": "Null",
+              "values": ["false"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "condition",
+        "op": "Null",
+        "key": "sts:ExternalId",
+        "values": ["false"],
+        "sources": [
+          {
+            "effect": "Allow",
+            "policyIdentifier": "0",
+            "policyType": "identity",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "Allowed with deny escape when identity Deny Null false key presence is unknown and present",
+    "request": {
+      "action": "sts:AssumeRole",
+      "resource": {
+        "resource": "arn:aws:iam::111111111111:role/example-role",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {
+        "sts:ExternalId": "example-external-id"
+      }
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::111111111111:role/example-role"
+          },
+          {
+            "Effect": "Deny",
+            "Action": "sts:AssumeRole",
+            "Resource": "arn:aws:iam::111111111111:role/example-role",
+            "Condition": {
+              "Null": {
+                "sts:ExternalId": "false"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "sts:ExternalId",
+          "presenceIsKnown": false,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "identity": {
+          "deny": [
+            {
+              "key": "sts:ExternalId",
+              "op": "Null",
+              "values": ["false"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "condition",
+        "op": "Null",
+        "key": "sts:ExternalId",
+        "values": ["true"],
+        "sources": [
+          {
+            "effect": "Deny",
+            "policyIdentifier": "0",
+            "policyType": "identity",
+            "statementIndex": 2
+          }
+        ],
+        "inverted": true
+      }
+    }
+  },
+  {
+    "name": "Allowed with ForAllValues condition when identity Allow key presence is unknown and absent",
+    "request": {
+      "action": "s3:ListBucket",
+      "resource": {
+        "resource": "arn:aws:s3:::example-bucket",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example-bucket",
+            "Condition": {
+              "ForAllValues:StringEquals": {
+                "aws:SourceOrgPaths": "o-example/r-root/ou-target/"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "identity": {
+          "allow": [
+            {
+              "key": "aws:SourceOrgPaths",
+              "op": "ForAllValues:StringEquals",
+              "values": ["o-example/r-root/ou-target/"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "condition",
+        "op": "ForAllValues:StringEquals",
+        "key": "aws:SourceOrgPaths",
+        "values": ["o-example/r-root/ou-target/"],
+        "sources": [
+          {
+            "effect": "Allow",
+            "policyIdentifier": "0",
+            "policyType": "identity",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "Allowed with deny escape when identity Deny ForAllValues key presence is unknown and absent",
+    "request": {
+      "action": "s3:ListBucket",
+      "resource": {
+        "resource": "arn:aws:s3:::example-bucket",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example-bucket"
+          },
+          {
+            "Effect": "Deny",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::example-bucket",
+            "Condition": {
+              "ForAllValues:StringEquals": {
+                "aws:SourceOrgPaths": "o-example/r-root/ou-target/"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "identity": {
+          "deny": [
+            {
+              "key": "aws:SourceOrgPaths",
+              "op": "ForAllValues:StringEquals",
+              "values": ["o-example/r-root/ou-target/"]
+            }
+          ]
+        }
+      },
+      "conditions": {
+        "conditionType": "group",
+        "operator": "and",
+        "conditions": [
+          {
+            "conditionType": "condition",
+            "op": "Null",
+            "key": "aws:SourceOrgPaths",
+            "values": ["false"],
+            "sources": [
+              {
+                "effect": "Deny",
+                "policyIdentifier": "0",
+                "policyType": "identity",
+                "statementIndex": 2
+              }
+            ],
+            "inverted": true
+          },
+          {
+            "conditionType": "condition",
+            "op": "ForAnyValue:StringNotEquals",
+            "key": "aws:SourceOrgPaths",
+            "values": ["o-example/r-root/ou-target/"],
+            "sources": [
+              {
+                "effect": "Deny",
+                "policyIdentifier": "0",
+                "policyType": "identity",
+                "statementIndex": 2
+              }
+            ],
+            "inverted": true
+          }
+        ]
+      }
+    }
   }
 ]
