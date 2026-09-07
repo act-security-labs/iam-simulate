@@ -768,6 +768,7 @@ describe('singleConditionMatchesRequest', () => {
 
       //Then the result should be 'Match'
       expect(response.matches).toEqual(true)
+      expect(response.matchedBecauseMissing).toEqual(true)
       expect(response.resolvedConditionKeyValue).toEqual(undefined)
       expect(response.values).toEqual({ value: 'true', matches: true })
     })
@@ -806,6 +807,7 @@ describe('singleConditionMatchesRequest', () => {
 
       //Then the result should be 'NoMatch'
       expect(response.matches).toEqual(false)
+      expect(response.matchedBecauseMissing).toBeUndefined()
       expect(response.resolvedConditionKeyValue).toEqual(undefined)
       expect(response.values).toEqual({ value: 'true', matches: false })
     })
@@ -844,6 +846,7 @@ describe('singleConditionMatchesRequest', () => {
 
       //Then the result should be 'Match'
       expect(response.matches).toEqual(false)
+      expect(response.matchedBecauseMissing).toBeUndefined()
       expect(response.resolvedConditionKeyValue).toEqual(undefined)
       expect(response.values).toEqual({ value: 'false', matches: false })
     })
@@ -882,11 +885,12 @@ describe('singleConditionMatchesRequest', () => {
 
       //Then the result should be 'Match'
       expect(response.matches).toEqual(true)
+      expect(response.matchedBecauseMissing).toBeUndefined()
       expect(response.resolvedConditionKeyValue).toEqual(undefined)
       expect(response.values).toEqual({ value: 'false', matches: true })
     })
 
-    it('should treat treat ForAllValues:Null the same as Null', () => {
+    it('should treat ForAllValues:Null with missing keys like the default ForAllValues behavior', () => {
       //Given a request with no context key
       const request = new AwsRequestImpl(
         '',
@@ -918,13 +922,14 @@ describe('singleConditionMatchesRequest', () => {
         defaultSimulationParameters
       )
 
-      //Then the result should be 'Match'
+      //Then the missing key should match because ForAllValues matches missing keys
       expect(response.matches).toEqual(true)
+      expect(response.matchedBecauseMissing).toEqual(true)
       expect(response.resolvedConditionKeyValue).toEqual(undefined)
-      expect(response.values).toEqual({ value: 'true', matches: true })
+      expect(response.values).toEqual([{ value: 'true', matches: true }])
     })
 
-    it('should treat ForAnyValue:Null the same as Null', () => {
+    it('should treat ForAnyValue:Null with missing keys like the default ForAnyValue behavior', () => {
       //Given a request with no context key
       const request = new AwsRequestImpl(
         '',
@@ -956,10 +961,11 @@ describe('singleConditionMatchesRequest', () => {
         defaultSimulationParameters
       )
 
-      //Then the result should be 'Match'
-      expect(response.matches).toEqual(true)
+      //Then the missing key should not match because ForAnyValue does not match missing keys
+      expect(response.matches).toEqual(false)
+      expect(response.failedBecauseMissing).toEqual(true)
       expect(response.resolvedConditionKeyValue).toEqual(undefined)
-      expect(response.values).toEqual({ value: 'true', matches: true })
+      expect(response.values).toEqual([{ value: 'true', matches: false }])
     })
   })
 
@@ -2132,7 +2138,7 @@ describe('requestMatchesConditions - Discovery context key constraints', () => {
       expect(result.ignoredConditions).toBeUndefined()
     })
 
-    it('should not report Null true as ignored when presence is unknown and the key is absent but the condition matches', () => {
+    it('should report Null true as ignored when presence is unknown and the key is absent but the condition matches', () => {
       //Given an absent SourceAccount key whose absence is not authoritative
       const req = requestWithContext({})
       const cond = conditionsFor('Allow', { Null: { 'aws:SourceAccount': 'true' } })
@@ -2145,12 +2151,16 @@ describe('requestMatchesConditions - Discovery context key constraints', () => {
         discoveryWithConstraint('aws:SourceAccount', false, false)
       )
 
-      //Then the matching Allow condition should not need to be ignored
+      //Then the matching Allow condition should preserve the unknown-presence requirement
       expect(result.matches).toBe('Match')
-      expect(result.ignoredConditions).toBeUndefined()
+      expect(result.ignoredConditions).toEqual(cond)
+      expect(result.details.conditions?.[0].matchedBecauseMissing).toBe(true)
+      expect(result.ignoredConditions?.[0].operation().value()).toBe('Null')
+      expect(result.ignoredConditions?.[0].conditionKey()).toBe('aws:SourceAccount')
+      expect(result.ignoredConditions?.[0].conditionValues()).toEqual(['true'])
     })
 
-    it('should not report Null false as ignored when presence is unknown and the key is present but the condition matches', () => {
+    it('should report Null false as ignored when presence is unknown and the key is present but the condition matches', () => {
       //Given a present SourceAccount key whose presence is not authoritative
       const req = requestWithContext({ 'aws:SourceAccount': '000000000000' })
       const cond = conditionsFor('Allow', { Null: { 'aws:SourceAccount': 'false' } })
@@ -2163,9 +2173,58 @@ describe('requestMatchesConditions - Discovery context key constraints', () => {
         discoveryWithConstraint('aws:SourceAccount', false, false)
       )
 
-      //Then the matching Allow condition should not need to be ignored
+      //Then the matching Allow condition should preserve the unknown-presence requirement
       expect(result.matches).toBe('Match')
-      expect(result.ignoredConditions).toBeUndefined()
+      expect(result.ignoredConditions).toEqual(cond)
+      expect(result.ignoredConditions?.[0].operation().value()).toBe('Null')
+      expect(result.ignoredConditions?.[0].conditionKey()).toBe('aws:SourceAccount')
+      expect(result.ignoredConditions?.[0].conditionValues()).toEqual(['false'])
+    })
+
+    it('should report ForAllValues:Null as ignored when presence is unknown and the missing key matches', () => {
+      //Given an absent CalledVia key whose absence is not authoritative
+      const req = requestWithContext({})
+      const cond = conditionsFor('Allow', { 'ForAllValues:Null': { 'aws:CalledVia': 'true' } })
+
+      //When checking the condition in Discovery mode
+      const result = requestMatchesConditions(
+        req,
+        cond,
+        'Allow',
+        discoveryWithConstraint('aws:CalledVia', false, false)
+      )
+
+      //Then ForAllValues should preserve the unknown-presence requirement
+      expect(result.matches).toBe('Match')
+      expect(result.ignoredConditions).toEqual(cond)
+      expect(result.details.conditions?.[0].matchedBecauseMissing).toBe(true)
+      expect(result.ignoredConditions?.[0].operation().value()).toBe('ForAllValues:Null')
+      expect(result.ignoredConditions?.[0].conditionKey()).toBe('aws:CalledVia')
+      expect(result.ignoredConditions?.[0].conditionValues()).toEqual(['true'])
+    })
+
+    it('should report ForAnyValue:Null as ignored when presence is unknown and the missing key does not match', () => {
+      //Given an absent CalledVia key whose absence is not authoritative
+      const req = requestWithContext({})
+      const cond = conditionsFor('Allow', { 'ForAnyValue:Null': { 'aws:CalledVia': 'true' } })
+
+      //When checking the condition in Discovery mode
+      const result = requestMatchesConditions(
+        req,
+        cond,
+        'Allow',
+        discoveryWithConstraint('aws:CalledVia', false, false)
+      )
+
+      //Then ForAnyValue should be reported through the non-matching Allow condition path
+      expect(result.matches).toBe('Match')
+      expect(result.ignoredConditions).toEqual(cond)
+      expect(result.details.conditions?.[0].matches).toBe(false)
+      expect(result.details.conditions?.[0].failedBecauseMissing).toBe(true)
+      expect(result.details.conditions?.[0].matchedBecauseMissing).toBeUndefined()
+      expect(result.ignoredConditions?.[0].operation().value()).toBe('ForAnyValue:Null')
+      expect(result.ignoredConditions?.[0].conditionKey()).toBe('aws:CalledVia')
+      expect(result.ignoredConditions?.[0].conditionValues()).toEqual(['true'])
     })
 
     it('should definitively match StringEqualsIfExists when presence is known and the key is absent', () => {
@@ -2349,7 +2408,7 @@ describe('requestMatchesConditions - Discovery context key constraints', () => {
       expect(result.details.conditions?.[0].matchedBecauseMissing).toBe(true)
     })
 
-    it('should not report ForAllValues as ignored when presence is unknown and the key is absent but the condition matches', () => {
+    it('should report ForAllValues as ignored when presence is unknown and the key is absent but the condition matches', () => {
       //Given an absent SourceOrgPaths key whose absence is not authoritative
       const req = requestWithContext({})
       const cond = conditionsFor('Allow', {
@@ -2364,9 +2423,10 @@ describe('requestMatchesConditions - Discovery context key constraints', () => {
         discoveryWithConstraint('aws:SourceOrgPaths', false, false)
       )
 
-      //Then the matching Allow condition should not need to be ignored
+      //Then the matching Allow condition should preserve the unknown-presence requirement
       expect(result.matches).toBe('Match')
-      expect(result.ignoredConditions).toBeUndefined()
+      expect(result.ignoredConditions).toEqual(cond)
+      expect(result.details.conditions?.[0].matchedBecauseMissing).toBe(true)
     })
 
     it('should report ForAllValues as ignored when presence is known but the present value is unknown', () => {
