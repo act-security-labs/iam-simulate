@@ -1,3 +1,10 @@
+## [0.1.175](https://github.com/act-security-labs/iam-simulate/compare/v0.1.174...v0.1.175) (2026-09-07)
+
+
+### Bug Fixes
+
+* report unknown-presence discovery conditions ([f2aab0d](https://github.com/act-security-labs/iam-simulate/commit/f2aab0d70958f1dc9bf357217f60c0ceb5e71ee1))
+
 ## [0.1.174](https://github.com/act-security-labs/iam-simulate/compare/v0.1.173...v0.1.174) (2026-09-01)
 
 
