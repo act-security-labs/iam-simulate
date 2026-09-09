@@ -1,6 +1,12 @@
 import { loadPolicy } from '@actsecurity/iam-policy'
 import { describe, expect, it } from 'vitest'
-import { and, denyStatementEscapeExpression, invertCondition, or } from './allowedConditions.js'
+import {
+  and,
+  denyStatementEscapeExpression,
+  invertCondition,
+  mergeAllowedConditionExpressions,
+  or
+} from './allowedConditions.js'
 import type { AllowedConditionExpression, AllowedConditionSource } from '../evaluate.js'
 import type { StatementAnalysis } from '../StatementAnalysis.js'
 
@@ -135,6 +141,54 @@ const expressionHelperTests: {
 ]
 
 describe('allowed condition expression helpers', () => {
+  it('merges optional expressions with AND semantics and reduces the result', () => {
+    //Given repeated and undefined condition expressions
+    const repeatedAndUndefinedExpressions = [sourceVpcCondition, undefined, sourceVpcCondition]
+
+    //When the expressions are merged
+    const result = mergeAllowedConditionExpressions(repeatedAndUndefinedExpressions)
+
+    //Then the merged condition should be reduced without duplicate conditions
+    expect(result).toEqual(sourceVpcCondition)
+  })
+
+  it('merges different expressions with AND semantics', () => {
+    //Given two different condition expressions
+    const expressions = [sourceVpcCondition, sourceIpCondition]
+
+    //When the expressions are merged
+    const result = mergeAllowedConditionExpressions(expressions)
+
+    //Then both conditions should be required in the reduced output
+    expect(result).toEqual({
+      conditionType: 'group',
+      operator: 'and',
+      conditions: [sourceVpcCondition, sourceIpCondition]
+    })
+  })
+
+  it('omits merged expressions that reduce to an unconditional result', () => {
+    //Given only unconditional expressions
+    const unconditionalExpressions: AllowedConditionExpression[] = [{ conditionType: 'always' }]
+
+    //When the expressions are merged
+    const result = mergeAllowedConditionExpressions(unconditionalExpressions)
+
+    //Then no public condition should be emitted
+    expect(result).toBeUndefined()
+  })
+
+  it('omits merged expressions when no expressions are provided', () => {
+    //Given no condition expressions
+    const expressions: AllowedConditionExpression[] = []
+
+    //When the expressions are merged
+    const result = mergeAllowedConditionExpressions(expressions)
+
+    //Then no public condition should be emitted
+    expect(result).toBeUndefined()
+  })
+
   for (const testCase of expressionHelperTests) {
     it(testCase.name, () => {
       //Given expression inputs defined by the test case

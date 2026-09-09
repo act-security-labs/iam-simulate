@@ -10,6 +10,7 @@ import {
   type ValidationError
 } from '@actsecurity/iam-policy'
 import { isAssumedRoleArn, isFederatedUserArn, isIamRoleArn } from '@actsecurity/iam-utils'
+import { mergeAllowedConditionExpressions } from '../analysis/allowedConditions.js'
 import { isConditionKeyArray } from '../context_keys/contextKeyTypes.js'
 import { normalizeContextKeyCase, typeForContextKey } from '../context_keys/contextKeys.js'
 import { DiscoveryContextKeyConstraints } from '../context_keys/discoveryContextKeyConstraints.js'
@@ -555,7 +556,6 @@ export async function runSimulation(
       // If the requested pattern is implicitly denied, narrower overlapping policy patterns cannot
       // make the overall request allowed because exact-pattern evaluation already considers any
       // overlapping identity, resource, and guardrail policy statements.
-      let resourceStrings = [simulation.request.resource.resource]
       const identityResourceStrings = getMatchingResourceStringsForPolicies(
         identityPoliciesThatGrantAccess,
         simulation.request.action,
@@ -570,13 +570,24 @@ export async function runSimulation(
         simulation.request.resource.resource,
         false
       )
-      resourceStrings = [...new Set([...identityResourceStrings, ...resourcePolicyResourceStrings])]
+      const resourceStrings = [
+        ...new Set([...identityResourceStrings, ...resourcePolicyResourceStrings])
+      ]
 
       for (const resourceString of resourceStrings) {
         const simulationResult = curriedAuthorize(resourceString, validContextValues)
+        const mergedConditions =
+          simulationResult.result === 'Allowed'
+            ? mergeAllowedConditionExpressions([
+                simulationResult.conditions,
+                exactPatternResult.conditions
+              ])
+            : undefined
 
         simulationResults.push({
-          analysis: simulationResult,
+          analysis: mergedConditions
+            ? { ...simulationResult, conditions: mergedConditions }
+            : simulationResult,
           ignoredContextKeys,
           resourceType: resourceType.key,
           resourcePattern: resourceString
