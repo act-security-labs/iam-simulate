@@ -130,6 +130,24 @@ export function allowedConditionOutput(
   return publicExpression(expression)
 }
 
+/**
+ * Merge condition expressions that must all be satisfied and reduce the public result.
+ *
+ * Undefined expressions are ignored. The remaining expressions are combined with AND semantics,
+ * simplified through the existing condition reducers, and converted to the public condition shape
+ * where unconditional or impossible expressions are omitted.
+ *
+ * @param expressions the optional condition expressions to merge
+ * @returns the reduced merged condition expression, or undefined when no public condition remains
+ */
+export function mergeAllowedConditionExpressions(
+  expressions: Array<AllowedConditionExpression | undefined>
+): AllowedConditionExpression | undefined {
+  return publicExpression(
+    and(expressions.filter((expr): expr is AllowedConditionExpression => !!expr))
+  )
+}
+
 export function sessionPolicyExpression(
   analysis: IdentityAnalysis | undefined,
   sessionPolicyPresent: boolean
