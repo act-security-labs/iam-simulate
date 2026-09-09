@@ -1,3 +1,10 @@
+## [0.1.176](https://github.com/act-security-labs/iam-simulate/compare/v0.1.175...v0.1.176) (2026-09-09)
+
+
+### Bug Fixes
+
+* retain request-scoped wildcard discovery conditions ([65af98a](https://github.com/act-security-labs/iam-simulate/commit/65af98a13dde30710a73546cd3f1369ef3514dff))
+
 ## [0.1.175](https://github.com/act-security-labs/iam-simulate/compare/v0.1.174...v0.1.175) (2026-09-07)
 
 
