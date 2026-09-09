@@ -1,0 +1,320 @@
+[
+  {
+    "name": "wildcard request retains bucket-scoped resource deny conditions with a global identity allow",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "FullS3",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::demo-bucket/*",
+            "Condition": {
+              "StringNotEquals": {
+                "aws:SourceVpc": "vpc-allowed"
+              }
+            }
+          }
+        ]
+      },
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::demo-bucket/*",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-allowed"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Deny",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "concrete request retains bucket-scoped resource deny conditions with a global identity allow",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "FullS3",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::demo-bucket/*",
+            "Condition": {
+              "StringNotEquals": {
+                "aws:SourceVpc": "vpc-allowed"
+              }
+            }
+          }
+        ]
+      },
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::demo-bucket/file.txt",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-allowed"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Deny",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "wildcard request retains bucket-scoped rcp deny conditions with a global identity allow",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "FullS3",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [
+        {
+          "orgIdentifier": "111111111111",
+          "policies": [
+            {
+              "name": "NetworkGuard",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::demo-bucket/*",
+                    "Condition": {
+                      "StringNotEquals": {
+                        "aws:SourceVpc": "vpc-allowed"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::demo-bucket/*",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-allowed"],
+            "sources": [
+              {
+                "policyType": "rcp",
+                "effect": "Deny",
+                "statementIndex": 1,
+                "policyIdentifier": "NetworkGuard",
+                "orgIdentifier": "111111111111"
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "concrete request retains bucket-scoped rcp deny conditions with a global identity allow",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "FullS3",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [
+        {
+          "orgIdentifier": "111111111111",
+          "policies": [
+            {
+              "name": "NetworkGuard",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::demo-bucket/*",
+                    "Condition": {
+                      "StringNotEquals": {
+                        "aws:SourceVpc": "vpc-allowed"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::demo-bucket/file.txt",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-allowed"],
+            "sources": [
+              {
+                "policyType": "rcp",
+                "effect": "Deny",
+                "statementIndex": 1,
+                "policyIdentifier": "NetworkGuard",
+                "orgIdentifier": "111111111111"
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  }
+]
