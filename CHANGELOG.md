@@ -1,3 +1,10 @@
+## [0.1.177](https://github.com/act-security-labs/iam-simulate/compare/v0.1.176...v0.1.177) (2026-09-10)
+
+
+### Bug Fixes
+
+* preserve mixed principal authorization paths ([9de852c](https://github.com/act-security-labs/iam-simulate/commit/9de852c884327d7d0a700129a4d2ba8753f26f64))
+
 ## [0.1.176](https://github.com/act-security-labs/iam-simulate/compare/v0.1.175...v0.1.176) (2026-09-09)
 
 
