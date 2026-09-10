@@ -1,0 +1,632 @@
+[
+  {
+    "name": "mixed account and assumed-role session principals preserve the unconditional KMS account-trust path",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true
+    }
+  },
+  {
+    "name": "session-only principal retains its session-name condition",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "SessionOnly",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "sessionName",
+        "sessionName": ["named-session"],
+        "sources": [
+          {
+            "policyType": "resource",
+            "effect": "Allow",
+            "policyIdentifier": "ResourcePolicy",
+            "statementId": "SessionOnly",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "account-only principal with identity allow is unconditional",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "AccountOnly",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:iam::111111111111:root"
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "mixed principals without identity allow retain only the direct session path",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedWithoutIdentity",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "sessionName",
+        "sessionName": ["named-session"],
+        "sources": [
+          {
+            "policyType": "resource",
+            "effect": "Allow",
+            "policyIdentifier": "ResourcePolicy",
+            "statementId": "MixedWithoutIdentity",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "different same-account role uses the unconditional account-trust path",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/OtherRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "cross-account mixed principals preserve the unconditional account-trust path",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:222222222222:key/example",
+        "accountId": "222222222222"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true
+    }
+  },
+  {
+    "name": "statement conditions apply to both mixed principal paths while the session name stays direct-only",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {
+        "kms:ViaService": "s3.us-east-1.amazonaws.com"
+      }
+    },
+    "simulation": {
+      "mode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "kms:ViaService",
+          "presenceIsKnown": true,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipalWithViaService",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "kms:*",
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "kms:ViaService": "ec2.us-east-1.amazonaws.com"
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "condition",
+        "op": "StringEquals",
+        "key": "kms:ViaService",
+        "values": ["ec2.us-east-1.amazonaws.com"],
+        "sources": [
+          {
+            "policyType": "resource",
+            "effect": "Allow",
+            "policyIdentifier": "ResourcePolicy",
+            "statementId": "MixedAccountAndSessionPrincipalWithViaService",
+            "statementIndex": 1
+          }
+        ]
+      },
+      "ignoredConditions": {
+        "resource": {
+          "allow": [
+            {
+              "key": "kms:ViaService",
+              "op": "StringEquals",
+              "values": ["ec2.us-east-1.amazonaws.com"]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "unconditional direct role statement absorbs a conditional same-account trust statement",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {
+        "kms:ViaService": "placeholder.us-east-1.amazonaws.com"
+      }
+    },
+    "simulation": {
+      "mode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "kms:ViaService",
+          "presenceIsKnown": true,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "identityPolicies": [],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "DirectRoleAccess",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:iam::111111111111:role/AdminRole"
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*"
+        },
+        {
+          "Sid": "ConditionalAccountTrust",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:iam::111111111111:root"
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "kms:ViaService": "ec2.us-east-1.amazonaws.com"
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredConditions": {
+        "resource": {
+          "allow": [
+            {
+              "key": "kms:ViaService",
+              "op": "StringEquals",
+              "values": ["ec2.us-east-1.amazonaws.com"]
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "name": "permission boundary conditions constrain the account path without inheriting its direct session name",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:111111111111:key/example",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {
+        "kms:ViaService": "placeholder.us-east-1.amazonaws.com",
+        "aws:SourceVpce": "vpce-placeholder"
+      }
+    },
+    "simulation": {
+      "mode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "kms:ViaService",
+          "presenceIsKnown": true,
+          "valueIsKnown": false
+        },
+        {
+          "keyName": "aws:SourceVpce",
+          "presenceIsKnown": true,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "permissionBoundaries": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "*",
+            "Condition": {
+              "StringEquals": {
+                "aws:SourceVpce": "vpce-boundary"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedPrincipalWithViaService",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "kms:DescribeKey",
+          "Resource": "*",
+          "Condition": {
+            "StringEquals": {
+              "kms:ViaService": "ec2.us-east-1.amazonaws.com"
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "group",
+        "operator": "or",
+        "conditions": [
+          {
+            "conditionType": "group",
+            "operator": "and",
+            "conditions": [
+              {
+                "conditionType": "condition",
+                "op": "StringEquals",
+                "key": "kms:ViaService",
+                "values": ["ec2.us-east-1.amazonaws.com"],
+                "sources": [
+                  {
+                    "policyType": "resource",
+                    "effect": "Allow",
+                    "policyIdentifier": "ResourcePolicy",
+                    "statementId": "MixedPrincipalWithViaService",
+                    "statementIndex": 1
+                  }
+                ]
+              },
+              {
+                "conditionType": "sessionName",
+                "sessionName": ["named-session"],
+                "sources": [
+                  {
+                    "policyType": "resource",
+                    "effect": "Allow",
+                    "policyIdentifier": "ResourcePolicy",
+                    "statementId": "MixedPrincipalWithViaService",
+                    "statementIndex": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "conditionType": "group",
+            "operator": "and",
+            "conditions": [
+              {
+                "conditionType": "condition",
+                "op": "StringEquals",
+                "key": "kms:ViaService",
+                "values": ["ec2.us-east-1.amazonaws.com"],
+                "sources": [
+                  {
+                    "policyType": "resource",
+                    "effect": "Allow",
+                    "policyIdentifier": "ResourcePolicy",
+                    "statementId": "MixedPrincipalWithViaService",
+                    "statementIndex": 1
+                  }
+                ]
+              },
+              {
+                "conditionType": "condition",
+                "op": "StringEquals",
+                "key": "aws:SourceVpce",
+                "values": ["vpce-boundary"],
+                "sources": [
+                  {
+                    "policyType": "permissionBoundary",
+                    "effect": "Allow",
+                    "policyIdentifier": "0",
+                    "statementIndex": 1
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "ignoredConditions": {
+        "resource": {
+          "allow": [
+            {
+              "key": "kms:ViaService",
+              "op": "StringEquals",
+              "values": ["ec2.us-east-1.amazonaws.com"]
+            }
+          ]
+        },
+        "permissionBoundary": {
+          "allow": [
+            {
+              "key": "aws:SourceVpce",
+              "op": "StringEquals",
+              "values": ["vpce-boundary"]
+            }
+          ]
+        }
+      }
+    }
+  }
+]

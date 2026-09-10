@@ -1,0 +1,244 @@
+[
+  {
+    "name": "cross-account mixed principals preserve the unconditional account-trust path",
+    "request": {
+      "action": "s3:GetObject",
+      "resource": {
+        "resource": "arn:aws:s3:::example-bucket/example-object",
+        "accountId": "222222222222"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::example-bucket/*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true
+    }
+  },
+  {
+    "name": "cross-account session-only principal retains its session-name condition",
+    "request": {
+      "action": "s3:GetObject",
+      "resource": {
+        "resource": "arn:aws:s3:::example-bucket/example-object",
+        "accountId": "222222222222"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "SessionOnly",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+          },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::example-bucket/*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "sessionName",
+        "sessionName": ["named-session"],
+        "sources": [
+          {
+            "policyType": "resource",
+            "effect": "Allow",
+            "policyIdentifier": "ResourcePolicy",
+            "statementId": "SessionOnly",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "same-account mixed principals remain unconditional through implicit trust",
+    "request": {
+      "action": "s3:GetObject",
+      "resource": {
+        "resource": "arn:aws:s3:::example-bucket/example-object",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": {
+      "mode": "Discovery"
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::example-bucket/*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true
+    }
+  },
+  {
+    "name": "cross-account conditional account trust preserves its condition without a session requirement",
+    "request": {
+      "action": "s3:GetObject",
+      "resource": {
+        "resource": "arn:aws:s3:::example-bucket/example-object",
+        "accountId": "222222222222"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {
+        "aws:PrincipalOrgID": "o-placeholder"
+      }
+    },
+    "simulation": {
+      "mode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "aws:PrincipalOrgID",
+          "presenceIsKnown": true,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "s3:GetObject",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "ConditionalMixedPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "s3:GetObject",
+          "Resource": "arn:aws:s3:::example-bucket/*",
+          "Condition": {
+            "StringEquals": {
+              "aws:PrincipalOrgID": "o-example"
+            }
+          }
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "condition",
+        "op": "StringEquals",
+        "key": "aws:PrincipalOrgID",
+        "values": ["o-example"],
+        "sources": [
+          {
+            "policyType": "resource",
+            "effect": "Allow",
+            "policyIdentifier": "ResourcePolicy",
+            "statementId": "ConditionalMixedPrincipal",
+            "statementIndex": 1
+          }
+        ]
+      },
+      "ignoredConditions": {
+        "resource": {
+          "allow": [
+            {
+              "key": "aws:PrincipalOrgID",
+              "op": "StringEquals",
+              "values": ["o-example"]
+            }
+          ]
+        }
+      }
+    }
+  }
+]
