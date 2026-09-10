@@ -113,10 +113,11 @@ export function or(expressions: AllowedConditionExpression[]): AllowedConditionE
   if (withoutNever.length === 0) {
     return never('noApplicableAllow')
   }
-  if (withoutNever.length === 1) {
-    return withoutNever[0]
+  const withoutAbsorbedBranches = removeAbsorbedOrBranches(withoutNever)
+  if (withoutAbsorbedBranches.length === 1) {
+    return withoutAbsorbedBranches[0]
   }
-  return { conditionType: 'group', operator: 'or', conditions: withoutNever }
+  return { conditionType: 'group', operator: 'or', conditions: withoutAbsorbedBranches }
 }
 
 export function allowedConditionOutput(
@@ -173,10 +174,18 @@ export function endpointPolicyExpression(
   return identityAllowExpression(analysis, 'endpointPolicy')
 }
 
+/**
+ * Convert matching resource-policy allow statements to an allowed-condition expression.
+ *
+ * @param statements the matching resource-policy allow statements
+ * @param includeSessionName whether inferred role-session-name requirements apply to these paths
+ * @returns an expression for the resource-policy allow paths
+ */
 export function resourceAllowStatementsExpression(
-  statements: StatementAnalysis[]
+  statements: StatementAnalysis[],
+  includeSessionName = true
 ): AllowedConditionExpression {
-  return allowStatementsExpression(statements, 'resource')
+  return allowStatementsExpression(statements, 'resource', includeSessionName)
 }
 
 export function allDenyEscapeExpressions(input: {
@@ -209,14 +218,27 @@ function identityAllowExpression(
   return allowStatementsExpression(analysis.allowStatements, policyType)
 }
 
+/**
+ * Combine matching allow statements into alternative allowed-condition paths.
+ *
+ * @param statements the matching allow statement analyses
+ * @param policyType the policy family containing the statements
+ * @param includeSessionName whether inferred role-session-name requirements apply to these paths
+ * @returns the combined expression for the allow statements
+ */
 function allowStatementsExpression(
   statements: StatementAnalysis[],
-  policyType: AllowedConditionSource['policyType']
+  policyType: AllowedConditionSource['policyType'],
+  includeSessionName = true
 ): AllowedConditionExpression {
   if (statements.length === 0) {
     return never('noApplicableAllow')
   }
-  return or(statements.map((statement) => allowStatementExpression(statement, policyType)))
+  return or(
+    statements.map((statement) =>
+      statementConditionExpression(statement, policyType, false, undefined, includeSessionName)
+    )
+  )
 }
 
 function denyEscapeExpressions(
@@ -256,18 +278,31 @@ function denyStatementsThatNeedEscapes(
   )
 }
 
+/**
+ * Convert one statement's ignored requirements into an allowed-condition expression.
+ *
+ * @param statement the statement analysis to convert
+ * @param policyType the policy family containing the statement
+ * @param inverted whether IAM condition leaves should be inverted
+ * @param orgIdentifier the organization identifier for a control-policy statement
+ * @param includeSessionName whether to include an inferred role-session-name requirement
+ * @returns the expression for the statement's ignored requirements
+ */
 function statementConditionExpression(
   statement: StatementAnalysis,
   policyType: AllowedConditionSource['policyType'],
   inverted: boolean,
-  orgIdentifier?: string
+  orgIdentifier?: string,
+  includeSessionName = true
 ): AllowedConditionExpression {
   const source = sourceForStatement(statement, policyType, orgIdentifier)
   const conditions = statement.ignoredConditions ?? []
   const conditionExpressions: AllowedConditionExpression[] = conditions.map((condition) =>
     conditionLeaf(condition, source, inverted)
   )
-  const sessionExpression = sessionNameExpression(statement, source)
+  const sessionExpression = includeSessionName
+    ? sessionNameExpression(statement, source)
+    : undefined
   if (sessionExpression) {
     conditionExpressions.push(sessionExpression)
   }
@@ -558,15 +593,67 @@ export function never(
   return { conditionType: 'never', reason }
 }
 
+/**
+ * Remove structurally identical expressions while retaining their original order.
+ *
+ * @param expressions the expressions to deduplicate
+ * @returns the first occurrence of each structural expression
+ */
 function dedupe(expressions: AllowedConditionExpression[]): AllowedConditionExpression[] {
   const seen = new Set<string>()
   const result: AllowedConditionExpression[] = []
   for (const expression of expressions) {
-    const key = JSON.stringify(expression)
+    const key = expressionKey(expression)
     if (!seen.has(key)) {
       seen.add(key)
       result.push(expression)
     }
   }
   return result
+}
+
+/**
+ * Remove stricter conjunctions when another OR branch is a structural subset.
+ *
+ * This applies only Boolean absorption between exact expression children, such as
+ * `A OR (A AND B) = A`; it does not infer semantic relationships between IAM conditions.
+ *
+ * @param expressions the simplified, deduplicated OR branches
+ * @returns the branches that are not absorbed by a less restrictive alternative
+ */
+function removeAbsorbedOrBranches(
+  expressions: AllowedConditionExpression[]
+): AllowedConditionExpression[] {
+  const requirementSets = expressions.map(
+    (expression) =>
+      new Set(
+        (expression.conditionType === 'group' && expression.operator === 'and'
+          ? expression.conditions
+          : [expression]
+        ).map(expressionKey)
+      )
+  )
+
+  return expressions.filter((_, candidateIndex) => {
+    const candidateRequirements = requirementSets[candidateIndex]
+    return !requirementSets.some(
+      (otherRequirements, otherIndex) =>
+        otherIndex !== candidateIndex &&
+        otherRequirements.size < candidateRequirements.size &&
+        Array.from(otherRequirements).every((requirement) => candidateRequirements.has(requirement))
+    )
+  })
+}
+
+/**
+ * Create a structural comparison key for an allowed-condition expression.
+ *
+ * Expressions are constructed internally with consistent property ordering. Different ordering can
+ * prevent simplification but cannot change authorization semantics.
+ *
+ * @param expression the expression to identify
+ * @returns a JSON structural key
+ */
+function expressionKey(expression: AllowedConditionExpression): string {
+  return JSON.stringify(expression)
 }

@@ -1,0 +1,124 @@
+[
+  {
+    "name": "cross-account mixed principals preserve the unconditional account-trust path",
+    "request": {
+      "action": "sqs:ReceiveMessage",
+      "resource": {
+        "resource": "arn:aws:sqs:us-east-1:222222222222:example-queue",
+        "accountId": "222222222222"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": { "mode": "Discovery" },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "sqs:ReceiveMessage", "Resource": "*" }]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "sqs:ReceiveMessage",
+          "Resource": "arn:aws:sqs:us-east-1:222222222222:example-queue"
+        }
+      ]
+    },
+    "expected": { "response": "Allowed", "ignoredRoleSessionName": true }
+  },
+  {
+    "name": "cross-account session-only principal retains its session-name condition",
+    "request": {
+      "action": "sqs:ReceiveMessage",
+      "resource": {
+        "resource": "arn:aws:sqs:us-east-1:222222222222:example-queue",
+        "accountId": "222222222222"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": { "mode": "Discovery" },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "sqs:ReceiveMessage", "Resource": "*" }]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "SessionOnly",
+          "Effect": "Allow",
+          "Principal": { "AWS": "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session" },
+          "Action": "sqs:ReceiveMessage",
+          "Resource": "arn:aws:sqs:us-east-1:222222222222:example-queue"
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed",
+      "ignoredRoleSessionName": true,
+      "conditions": {
+        "conditionType": "sessionName",
+        "sessionName": ["named-session"],
+        "sources": [
+          {
+            "policyType": "resource",
+            "effect": "Allow",
+            "policyIdentifier": "ResourcePolicy",
+            "statementId": "SessionOnly",
+            "statementIndex": 1
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "same-account mixed principals remain unconditional through implicit trust",
+    "request": {
+      "action": "sqs:ReceiveMessage",
+      "resource": {
+        "resource": "arn:aws:sqs:us-east-1:111111111111:example-queue",
+        "accountId": "111111111111"
+      },
+      "principal": "arn:aws:iam::111111111111:role/AdminRole",
+      "context": {}
+    },
+    "simulation": { "mode": "Discovery" },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "sqs:ReceiveMessage", "Resource": "*" }]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Sid": "MixedAccountAndSessionPrincipal",
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": [
+              "arn:aws:iam::111111111111:root",
+              "arn:aws:sts::111111111111:assumed-role/AdminRole/named-session"
+            ]
+          },
+          "Action": "sqs:ReceiveMessage",
+          "Resource": "arn:aws:sqs:us-east-1:111111111111:example-queue"
+        }
+      ]
+    },
+    "expected": { "response": "Allowed", "ignoredRoleSessionName": true }
+  }
+]

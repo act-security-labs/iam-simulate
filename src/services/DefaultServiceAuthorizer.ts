@@ -453,8 +453,13 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
         request.resourceAnalysis.result === 'AllowedForAccount') &&
       request.identityAnalysis.result === 'Allowed'
     ) {
+      const trustedAccount = this.serviceTrustsPrincipalAccount(
+        false,
+        request.resourceAnalysis,
+        request.request.resource
+      )
       return and([
-        this.crossAccountResourcePolicyConditions(request),
+        this.crossAccountResourcePolicyConditions(request, trustedAccount),
         identityPolicyExpression(request.identityAnalysis),
         permissionBoundaryExpression(request.permissionBoundaryAnalysis)
       ])
@@ -535,7 +540,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
     const identityConditions =
       request.identityAnalysis.result === 'Allowed'
         ? and([
-            resourceAllowStatementsExpression(trustedAccount.statements),
+            this.explicitAccountTrustExpression(trustedAccount),
             identityPolicyExpression(request.identityAnalysis),
             permissionBoundaryExpression(request.permissionBoundaryAnalysis)
           ])
@@ -565,9 +570,33 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
   protected accountLevelResourceAllowStatements(
     resourceAnalysis: ResourceAnalysis
   ): StatementAnalysis[] {
-    return resourceAnalysis.allowStatements.filter(
-      (statement) => statement.principalMatch === 'AccountLevelMatch'
-    )
+    return resourceAnalysis.allowStatements.filter((statement) => {
+      const principalExplains = statement.explain.principals
+      if (!principalExplains) {
+        return statement.principalMatch === 'AccountLevelMatch'
+      }
+
+      const explains = Array.isArray(principalExplains) ? principalExplains : [principalExplains]
+      return explains.some((principal) => principal.matches === 'AccountLevelMatch')
+    })
+  }
+
+  /**
+   * Build the condition expression for an explicit principal-account trust path.
+   *
+   * Account trust statements retain their IAM conditions but do not inherit a session-name
+   * requirement from another principal alternative in the same statement.
+   *
+   * @param trustedAccount the service's principal-account trust decision
+   * @returns the explicit account-trust expression, or a non-applicable expression
+   */
+  private explicitAccountTrustExpression(
+    trustedAccount: PrincipalAccountTrust
+  ): AllowedConditionExpression {
+    if (trustedAccount.trustType !== 'Explicit') {
+      return { conditionType: 'never', reason: 'noApplicableAllow' }
+    }
+    return resourceAllowStatementsExpression(trustedAccount.statements, false)
   }
 
   /**
@@ -671,7 +700,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
 
     if (identityStatementResult === 'Allowed') {
       const identityConditions = and([
-        resourceAllowStatementsExpression(trustedAccount.statements),
+        this.explicitAccountTrustExpression(trustedAccount),
         identityPolicyExpression(request.identityAnalysis)
       ])
       return {
@@ -717,10 +746,12 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
    * Get resource-policy conditions for a cross-account request's resource-policy side.
    *
    * @param request the service authorization request containing all analyses
+   * @param trustedAccount how the service trusts the request principal's account
    * @returns resource-policy conditions for the matching cross-account resource-policy statements
    */
   private crossAccountResourcePolicyConditions(
-    request: ServiceAuthorizationRequest
+    request: ServiceAuthorizationRequest,
+    trustedAccount: PrincipalAccountTrust
   ): AllowedConditionExpression {
     if (
       request.resourceAnalysis.result !== 'Allowed' &&
@@ -729,9 +760,11 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
       return { conditionType: 'never', reason: 'noApplicableAllow' }
     }
 
-    return resourceAllowStatementsExpression([
-      ...this.directResourceAllowStatements(request.resourceAnalysis),
-      ...this.accountLevelResourceAllowStatements(request.resourceAnalysis)
+    return or([
+      resourceAllowStatementsExpression(
+        this.directResourceAllowStatements(request.resourceAnalysis)
+      ),
+      this.explicitAccountTrustExpression(trustedAccount)
     ])
   }
 
@@ -830,13 +863,14 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
       }
     }
 
+    const trustedAccount = this.serviceTrustsPrincipalAccount(
+      sameAccount,
+      request.resourceAnalysis,
+      request.request.resource
+    )
+
     //Same Account
     if (sameAccount) {
-      const trustedAccount = this.serviceTrustsPrincipalAccount(
-        sameAccount,
-        request.resourceAnalysis,
-        request.request.resource
-      )
       return this.sameAccountInitialEvaluation(request, trustedAccount)
     }
 
@@ -844,7 +878,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
     if (resourcePolicyResult === 'Allowed' || resourcePolicyResult === 'AllowedForAccount') {
       if (identityStatementResult === 'Allowed') {
         const coreConditions = and([
-          this.crossAccountResourcePolicyConditions(request),
+          this.crossAccountResourcePolicyConditions(request, trustedAccount),
           identityPolicyExpression(request.identityAnalysis)
         ])
         return {

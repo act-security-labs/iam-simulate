@@ -137,6 +137,45 @@ const expressionHelperTests: {
       operator: 'or',
       conditions: [sourceVpcCondition, sourceIpCondition, sourceVpceCondition]
     }
+  },
+  {
+    name: 'absorbs an AND branch whose requirements include a later OR branch',
+    expression: () => or([and([sourceVpcCondition, sourceIpCondition]), sourceVpcCondition]),
+    expected: sourceVpcCondition
+  },
+  {
+    name: 'absorbs multiple AND branches regardless of OR branch order',
+    expression: () =>
+      or([
+        sourceVpcCondition,
+        and([sourceVpcCondition, sourceIpCondition]),
+        and([sourceVpcCondition, sourceVpceCondition])
+      ]),
+    expected: sourceVpcCondition
+  },
+  {
+    name: 'retains AND branches when neither requirement set contains the other',
+    expression: () =>
+      or([
+        and([sourceVpcCondition, sourceIpCondition]),
+        and([sourceVpcCondition, sourceVpceCondition])
+      ]),
+    expected: {
+      conditionType: 'group',
+      operator: 'or',
+      conditions: [
+        {
+          conditionType: 'group',
+          operator: 'and',
+          conditions: [sourceVpcCondition, sourceIpCondition]
+        },
+        {
+          conditionType: 'group',
+          operator: 'and',
+          conditions: [sourceVpcCondition, sourceVpceCondition]
+        }
+      ]
+    }
   }
 ]
 
