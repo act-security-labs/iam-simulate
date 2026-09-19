@@ -1,3 +1,10 @@
+## [0.1.178](https://github.com/act-security-labs/iam-simulate/compare/v0.1.177...v0.1.178) (2026-09-19)
+
+
+### Bug Fixes
+
+* use updated dependency updater action ([dc9d496](https://github.com/act-security-labs/iam-simulate/commit/dc9d4963c8fed054500489114f69061a0ee2cd31))
+
 ## [0.1.177](https://github.com/act-security-labs/iam-simulate/compare/v0.1.176...v0.1.177) (2026-09-10)
 
 
