@@ -1,3 +1,10 @@
+## [0.1.180](https://github.com/act-security-labs/iam-simulate/compare/v0.1.179...v0.1.180) (2026-09-22)
+
+
+### Bug Fixes
+
+* classify PrincipalArn string conditions for S3 BPA ([5484eb2](https://github.com/act-security-labs/iam-simulate/commit/5484eb2213531aaa5ae4bde13def108c4356235e))
+
 ## [0.1.179](https://github.com/act-security-labs/iam-simulate/compare/v0.1.178...v0.1.179) (2026-09-19)
 
 ## [0.1.178](https://github.com/act-security-labs/iam-simulate/compare/v0.1.177...v0.1.178) (2026-09-19)
