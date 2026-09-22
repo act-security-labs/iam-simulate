@@ -88,6 +88,108 @@ const classifierCases: RuntimePublicClassifierTestCase[] = [
     publicStatements: [{ index: 1, sid: 'PrincipalArnWildcardAccount' }]
   },
   {
+    name: 'PrincipalArn StringEquals condition is non-public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringEquals', {
+      StringEquals: { 'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole' }
+    }),
+    expected: 'nonPublic'
+  },
+  {
+    name: 'PrincipalArn StringLike condition is non-public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringLike', {
+      StringLike: { 'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole' }
+    }),
+    expected: 'nonPublic'
+  },
+  {
+    name: 'PrincipalArn StringLike with fixed-account resource wildcard is non-public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringLikeResourceWildcard', {
+      StringLike: { 'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/*' }
+    }),
+    expected: 'nonPublic'
+  },
+  {
+    name: 'PrincipalArn StringLike with wildcard account is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringLikeWildcardAccount', {
+      StringLike: { 'aws:PrincipalArn': 'arn:aws:iam::*:role/ExampleRole' }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringLikeWildcardAccount' }]
+  },
+  {
+    name: 'PrincipalArn StringEqualsIgnoreCase condition is non-public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringEqualsIgnoreCase', {
+      StringEqualsIgnoreCase: {
+        'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole'
+      }
+    }),
+    expected: 'nonPublic'
+  },
+  {
+    name: 'PrincipalArn StringNotEquals condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringNotEquals', {
+      StringNotEquals: { 'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole' }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringNotEquals' }]
+  },
+  {
+    name: 'PrincipalArn StringNotLike condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringNotLike', {
+      StringNotLike: { 'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole' }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringNotLike' }]
+  },
+  {
+    name: 'PrincipalArn StringEqualsIfExists condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringEqualsIfExists', {
+      StringEqualsIfExists: {
+        'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole'
+      }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringEqualsIfExists' }]
+  },
+  {
+    name: 'PrincipalArn StringLikeIfExists condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringLikeIfExists', {
+      StringLikeIfExists: { 'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole' }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringLikeIfExists' }]
+  },
+  {
+    name: 'PrincipalArn StringEqualsIgnoreCaseIfExists condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringEqualsIgnoreCaseIfExists', {
+      StringEqualsIgnoreCaseIfExists: {
+        'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole'
+      }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringEqualsIgnoreCaseIfExists' }]
+  },
+  {
+    name: 'PrincipalArn StringNotEqualsIfExists condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringNotEqualsIfExists', {
+      StringNotEqualsIfExists: {
+        'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole'
+      }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringNotEqualsIfExists' }]
+  },
+  {
+    name: 'PrincipalArn StringNotLikeIfExists condition is public',
+    policy: wildcardAllowWithCondition('PrincipalArnStringNotLikeIfExists', {
+      StringNotLikeIfExists: {
+        'aws:PrincipalArn': 'arn:aws:iam::111111111111:role/ExampleRole'
+      }
+    }),
+    expected: 'public',
+    publicStatements: [{ index: 1, sid: 'PrincipalArnStringNotLikeIfExists' }]
+  },
+  {
     name: 'PrincipalAccount exact condition is non-public',
     policy: wildcardAllowWithCondition('PrincipalAccountExact', {
       StringEquals: { 'aws:PrincipalAccount': '111111111111' }

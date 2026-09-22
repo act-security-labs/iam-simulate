@@ -154,7 +154,8 @@ function hasFixedValueCondition(
 }
 
 /**
- * Checks for public-access-limiting aws:PrincipalArn conditions.
+ * Checks for public-access-limiting aws:PrincipalArn conditions. Positive String operators
+ * use the same fixed-account validation as their corresponding ARN operators.
  *
  * @param conditionMap the statement condition map
  * @returns true if PrincipalArn is constrained to a fixed account principal pattern
@@ -163,10 +164,10 @@ function hasPrincipalArnLimitingCondition(
   conditionMap: Record<string, Record<string, string[]>>
 ): boolean {
   return conditionEntries(conditionMap, 'aws:PrincipalArn').some(({ operator, values }) => {
-    if (operator === 'ArnEquals') {
+    if (['ArnEquals', 'StringEquals', 'StringEqualsIgnoreCase'].includes(operator)) {
       return values.every(isArnWithFixedAccount)
     }
-    if (operator === 'ArnLike') {
+    if (['ArnLike', 'StringLike'].includes(operator)) {
       return values.every(
         (value) => isArnWithFixedAccount(value) && arnWildcardOnlyInResource(value)
       )
