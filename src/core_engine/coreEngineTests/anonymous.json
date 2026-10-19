@@ -489,5 +489,76 @@
         ]
       }
     }
+  },
+  {
+    "name": "anonymous sts GetCallerIdentity is denied",
+    "request": {
+      "action": "STS:GetCallerIdentity",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": {
+        "type": "Anonymous"
+      },
+      "context": {}
+    },
+    "identityPolicies": [],
+    "serviceControlPolicies": [],
+    "resourceControlPolicies": [],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "anonymous sts GetSessionToken is denied",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": {
+        "type": "Anonymous"
+      },
+      "context": {}
+    },
+    "identityPolicies": [],
+    "serviceControlPolicies": [],
+    "resourceControlPolicies": [],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "anonymous sts AssumeRole is denied despite wildcard trust policy",
+    "request": {
+      "action": "sts:AssumeRole",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/test-role",
+        "accountId": "123456789012"
+      },
+      "principal": {
+        "type": "Anonymous"
+      },
+      "context": {}
+    },
+    "identityPolicies": [],
+    "serviceControlPolicies": [],
+    "resourceControlPolicies": [],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": "*",
+          "Action": "sts:AssumeRole",
+          "Resource": "*"
+        }
+      ]
+    },
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
   }
 ]

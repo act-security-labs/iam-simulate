@@ -3,14 +3,29 @@ import { type RequestResource } from '../request/requestResource.js'
 import { DefaultServiceAuthorizer, type PrincipalAccountTrust } from './DefaultServiceAuthorizer.js'
 import { type ServiceAuthorizationRequest } from './ServiceAuthorizer.js'
 
+const actionsRequiringAuthenticatedPrincipal = new Set([
+  'sts:assumerole',
+  'sts:getcalleridentity',
+  'sts:getsessiontoken'
+])
+
 /**
- * The default authorizer for services.
+ * Service authorizer for AWS Security Token Service requests.
  */
 export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
+  /**
+   * Authorizes an STS request, accounting for STS actions that cannot be called anonymously.
+   *
+   * @param request the service authorization request containing the principal and policy analyses.
+   * @returns the final STS authorization analysis.
+   */
   public override authorize(request: ServiceAuthorizationRequest): RequestAnalysis {
+    const action = request.request.action.value()
+    const principal = request.request.principal
+
     if (
-      request.request.action.value().toLowerCase() === 'sts:getcalleridentity' &&
-      request.request.principal.isAuthenticated()
+      action.localeCompare('sts:getcalleridentity', undefined, { sensitivity: 'accent' }) === 0 &&
+      principal.isAuthenticated()
     ) {
       return {
         result: 'Allowed',
@@ -18,7 +33,20 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
         conditions: undefined
       }
     }
-    return super.authorize(request)
+
+    const baseResult = super.authorize(request)
+    if (
+      principal.isAnonymous() &&
+      actionsRequiringAuthenticatedPrincipal.has(action.toLowerCase())
+    ) {
+      return {
+        ...baseResult,
+        result: 'ImplicitlyDenied',
+        conditions: undefined
+      }
+    }
+
+    return baseResult
   }
 
   /**
