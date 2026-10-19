@@ -1,3 +1,10 @@
+## [0.1.186](https://github.com/act-security-labs/iam-simulate/compare/v0.1.185...v0.1.186) (2026-10-19)
+
+
+### Features
+
+* deny anonymous requests to authenticated STS actions ([#205](https://github.com/act-security-labs/iam-simulate/issues/205)) ([ea84651](https://github.com/act-security-labs/iam-simulate/commit/ea8465141c31230d48a686874735159a7208b3ad))
+
 ## [0.1.185](https://github.com/act-security-labs/iam-simulate/compare/v0.1.184...v0.1.185) (2026-10-17)
 
 ## [0.1.184](https://github.com/act-security-labs/iam-simulate/compare/v0.1.183...v0.1.184) (2026-10-10)
