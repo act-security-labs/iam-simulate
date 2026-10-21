@@ -1,3 +1,10 @@
+## [0.1.188](https://github.com/act-security-labs/iam-simulate/compare/v0.1.187...v0.1.188) (2026-10-21)
+
+
+### Bug Fixes
+
+* decide sts:GetSessionToken by caller kind and resolve placeholder-variable condition keys ([#206](https://github.com/act-security-labs/iam-simulate/issues/206)) ([6a5018f](https://github.com/act-security-labs/iam-simulate/commit/6a5018f7e82a2a61432828e230a46f78939dc5ee))
+
 ## [0.1.187](https://github.com/act-security-labs/iam-simulate/compare/v0.1.186...v0.1.187) (2026-10-21)
 
 
