@@ -41,5 +41,32 @@
     "expected": {
       "response": "Allowed"
     }
+  },
+  {
+    "name": "sts:GetCallerIdentity should be allowed for an assumed-role session even if explicitly denied",
+    "request": {
+      "action": "sts:GetCallerIdentity",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:sts::123456789012:assumed-role/test-role/session",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
   }
 ]
