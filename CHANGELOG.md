@@ -1,3 +1,10 @@
+## [0.1.187](https://github.com/act-security-labs/iam-simulate/compare/v0.1.186...v0.1.187) (2026-10-21)
+
+
+### Bug Fixes
+
+* run PR checks safely for fork contributions ([#207](https://github.com/act-security-labs/iam-simulate/issues/207)) ([0d94a80](https://github.com/act-security-labs/iam-simulate/commit/0d94a805957edd45786d7c60c0057f0fc8c29304))
+
 ## [0.1.186](https://github.com/act-security-labs/iam-simulate/compare/v0.1.185...v0.1.186) (2026-10-19)
 
 
