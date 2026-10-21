@@ -112,6 +112,28 @@ describe('isActualContextKey', () => {
     expect(result).toBeTruthy()
   })
 
+  it('should return true for a service key whose variable iam-data spells as a placeholder', async () => {
+    //Given a key under secretsmanager:ResourceTag/tag-key, whose variable has no ${TagKey} form
+    const key = 'secretsmanager:ResourceTag/env'
+
+    //When the key is checked
+    const result = await isActualContextKey(key)
+
+    //Then the result should be true
+    expect(result).toBeTruthy()
+  })
+
+  it.each(['ec2:ResourceTag/', 'ec2:NoSuchPrefix/env'])(
+    'should return false for %s: an empty variable, or a prefix no service key has',
+    async (key) => {
+      //When the key is checked
+      const result = await isActualContextKey(key)
+
+      //Then the result should be false
+      expect(result).toBeFalsy()
+    }
+  )
+
   it('should return true for a valid cross-prefix Cognito Identity condition key', async () => {
     //Given a Cognito Identity condition key whose prefix is not the owning service prefix
     const key = 'cognito-identity-unauth:IdentityPoolArn'
@@ -169,7 +191,31 @@ describe('normalizeContextKeyCase', () => {
   })
 })
 
+describe('normalizeContextKeyCase for a placeholder variable', () => {
+  it('should use the service key casing before the slash and keep the variable', async () => {
+    //Given a placeholder-variable service key in the wrong case
+    const key = 'SECRETSMANAGER:resourcetag/Env'
+
+    //When the case is normalized
+    const result = await normalizeContextKeyCase(key)
+
+    //Then the prefix should take iam-data's casing
+    expect(result).toEqual('secretsmanager:ResourceTag/Env')
+  })
+})
+
 describe('typeForContextKey', () => {
+  it('should return the type of a service key whose variable iam-data spells as a placeholder', async () => {
+    //Given a key under secretsmanager:ResourceTag/tag-key
+    const key = 'secretsmanager:ResourceTag/env'
+
+    //When the type is gotten
+    const result = await typeForContextKey(key)
+
+    //Then the placeholder key's type should be returned
+    expect(result).toEqual('String')
+  })
+
   it('should return a service key with a slash in it', async () => {
     //Given a service key
     const key = 's3:ExistingObjectTag/Classification'
