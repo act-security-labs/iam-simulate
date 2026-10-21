@@ -16,6 +16,22 @@
     }
   },
   {
+    "name": "sts:GetSessionToken is allowed in any letter case",
+    "request": {
+      "action": "STS:getsessiontoken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
     "name": "sts:GetSessionToken is allowed when an SCP denies sts:*",
     "request": {
       "action": "sts:GetSessionToken",

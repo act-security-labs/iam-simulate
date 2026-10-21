@@ -5,30 +5,23 @@ import { type RequestResource } from '../request/requestResource.js'
 import { DefaultServiceAuthorizer, type PrincipalAccountTrust } from './DefaultServiceAuthorizer.js'
 import { type ServiceAuthorizationRequest } from './ServiceAuthorizer.js'
 
-const actionsRequiringAuthenticatedPrincipal = new Set([
-  'sts:assumerole',
-  'sts:getcalleridentity',
-  'sts:getsessiontoken'
-])
+const actionsRequiringAuthenticatedPrincipal: readonly string[] = [
+  'sts:AssumeRole',
+  'sts:GetCallerIdentity',
+  'sts:GetSessionToken'
+]
 
 /**
  * Service authorizer for AWS Security Token Service requests.
  */
 export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
-  /**
-   * Authorizes an STS request. A request AWS decides by its caller alone gets that result with no policy
-   * analysis, so no denial reason read from it names a policy: none took part. Any other request goes through
-   * policy evaluation, and STS actions that cannot be called anonymously are denied to anonymous callers.
-   *
-   * @param request the service authorization request containing the principal and policy analyses.
-   * @returns the final STS authorization analysis.
-   */
+  /** Authorizes an STS request, answering actions decided by the caller alone without policy evaluation. */
   public override authorize(request: ServiceAuthorizationRequest): RequestAnalysis {
     const action = request.request.action.value()
     const principal = request.request.principal
 
     const policyFreeResult = resultWithoutPolicies({ action, principal })
-    if (policyFreeResult !== null) {
+    if (policyFreeResult !== undefined) {
       return {
         result: policyFreeResult,
         sameAccount: true,
@@ -39,7 +32,9 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
     const baseResult = super.authorize(request)
     if (
       principal.isAnonymous() &&
-      actionsRequiringAuthenticatedPrincipal.has(action.toLowerCase())
+      actionsRequiringAuthenticatedPrincipal.some((candidate) =>
+        isSameAction({ action, candidate })
+      )
     ) {
       return {
         ...baseResult,
@@ -82,49 +77,40 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
   }
 }
 
-/** A result AWS reaches without reading any policy. */
-type PolicyFreeResult = Extract<EvaluationResult, 'Allowed' | 'ImplicitlyDenied'>
-
 const rootArnRegex = /^arn:[a-zA-Z-]+:iam::\d{12}:root$/
 
-/**
- * The STS actions AWS decides by their authenticated caller alone, each with its result for a caller. No identity
- * policy, session policy, permissions boundary, SCP or RCP takes part, an explicit Deny included:
- * - GetCallerIdentity: allowed for any caller.
- * - GetSessionToken: allowed for an IAM user or the root user, the only callers whose credentials AWS accepts for
- *   it. Any other caller (a role or role session, a federated user, a service) is rejected whatever its policies
- *   allow; the simulator has no rejected-credential result, so it answers ImplicitlyDenied. Known gap: a call made
- *   with the session credentials GetSessionToken returned is rejected too, but it appears as the IAM user's ARN, and
- *   the request carries no credential type, so the simulator answers Allowed.
- */
-const resultForCallerByAction = new Map<string, (principalValue: string) => PolicyFreeResult>([
-  ['sts:getcalleridentity', () => 'Allowed'],
-  [
-    'sts:getsessiontoken',
-    (principalValue) =>
+/** STS actions whose result depends only on the caller. */
+const resultForCallerByAction: readonly {
+  action: string
+  resultForCaller: (principalValue: string) => EvaluationResult
+}[] = [
+  { action: 'sts:GetCallerIdentity', resultForCaller: () => 'Allowed' },
+  {
+    action: 'sts:GetSessionToken',
+    resultForCaller: (principalValue) =>
       isIamUserArn(principalValue) || rootArnRegex.test(principalValue)
         ? 'Allowed'
         : 'ImplicitlyDenied'
-  ]
-])
+  }
+]
 
-/**
- * The result of an STS request AWS decides by its authenticated caller alone.
- *
- * @param params.action the STS action being authorized.
- * @param params.principal the request principal.
- * @returns the result AWS gives the caller, or null when the request's policies decide it.
- */
+/** The result AWS gives an authenticated caller for an action decided by the caller alone, else undefined. */
 function resultWithoutPolicies({
   action,
   principal
 }: {
   action: string
   principal: RequestPrincipal
-}): PolicyFreeResult | null {
-  const resultForCaller = resultForCallerByAction.get(action.toLowerCase())
-  if (resultForCaller === undefined || !principal.isAuthenticated()) {
-    return null
+}): EvaluationResult | undefined {
+  const entry = resultForCallerByAction.find((row) =>
+    isSameAction({ action, candidate: row.action })
+  )
+  if (entry === undefined || !principal.isAuthenticated()) {
+    return undefined
   }
-  return resultForCaller(principal.value())
+  return entry.resultForCaller(principal.value())
+}
+
+function isSameAction({ action, candidate }: { action: string; candidate: string }): boolean {
+  return action.localeCompare(candidate, undefined, { sensitivity: 'accent' }) === 0
 }
