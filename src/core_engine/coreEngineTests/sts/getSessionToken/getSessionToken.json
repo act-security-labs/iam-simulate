@@ -1,0 +1,374 @@
+[
+  {
+    "name": "sts:GetSessionToken is allowed without an identity policy",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed in any letter case",
+    "request": {
+      "action": "STS:getsessiontoken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed when an SCP denies sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "serviceControlPolicies": [
+      {
+        "orgIdentifier": "ou-root",
+        "policies": [
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "sts:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed when an RCP denies sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "resourceControlPolicies": [
+      {
+        "orgIdentifier": "ou-root",
+        "policies": [
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Principal": "*",
+                "Action": "sts:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed when the identity policy denies sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed when the permissions boundary denies it",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "permissionBoundaries": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed when the identity policy denies sts:GetSessionToken",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Action": "sts:GetSessionToken",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is allowed for the root user without an identity policy",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:root",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for an assumed-role session without an identity policy",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:sts::123456789012:assumed-role/test-role/session",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for an assumed-role session whose identity policy allows sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:sts::123456789012:assumed-role/test-role/session",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for a role whose identity policy allows sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:role/test-role",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for a role, not blamed on the SCP that denies sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:role/test-role",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "serviceControlPolicies": [
+      {
+        "orgIdentifier": "ou-root",
+        "policies": [
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "sts:*",
+                "Resource": "*"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for a federated user whose identity policy allows sts:*",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:sts::123456789012:federated-user/test-user",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "sts:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for a service principal",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": "ec2.amazonaws.com",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "sts:GetSessionToken is denied for an anonymous caller",
+    "request": {
+      "action": "sts:GetSessionToken",
+      "resource": {
+        "resource": "*",
+        "accountId": "123456789012"
+      },
+      "principal": {
+        "type": "Anonymous"
+      },
+      "context": {}
+    },
+    "identityPolicies": [],
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  }
+]

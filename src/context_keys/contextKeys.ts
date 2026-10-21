@@ -1,4 +1,10 @@
-import { type ConditionKey, findConditionKey } from '@actsecurity/iam-data'
+import {
+  type ConditionKey,
+  findConditionKey,
+  iamConditionKeyDetails,
+  iamConditionKeysForService,
+  iamServiceExists
+} from '@actsecurity/iam-data'
 import { getGlobalConditionKeyWithOrWithoutPrefix } from '../global_conditions/globalConditionKeys.js'
 import { type ConditionKeyType } from './contextKeyTypes.js'
 
@@ -37,7 +43,7 @@ export async function isActualContextKey(key: string): Promise<boolean> {
     return true
   }
 
-  const dataKey = await findConditionKey(key)
+  const dataKey = await serviceContextKeyDetails(key)
   return !!dataKey
 }
 
@@ -48,7 +54,38 @@ export async function isActualContextKey(key: string): Promise<boolean> {
  * @returns The details for the context key if it exists. if the key has variables in it it will return the details for the variable key
  */
 async function serviceContextKeyDetails(contextKey: string): Promise<ConditionKey | undefined> {
-  return findConditionKey(contextKey)
+  return (
+    (await findConditionKey(contextKey)) ?? (await placeholderVariableContextKeyDetails(contextKey))
+  )
+}
+
+/**
+ * Finds the service condition key that shares a context key's text through its first `/`, for
+ * iam-data entries that spell the variable as a literal placeholder, such as
+ * `secretsmanager:ResourceTag/tag-key`.
+ *
+ * @param contextKey the context key to get the details for
+ * @returns the details for the service condition key with the same prefix, if one exists
+ */
+async function placeholderVariableContextKeyDetails(
+  contextKey: string
+): Promise<ConditionKey | undefined> {
+  const colonIndex = contextKey.indexOf(':')
+  const slashIndex = contextKey.indexOf('/')
+  if (colonIndex === -1 || slashIndex < colonIndex || slashIndex === contextKey.length - 1) {
+    return undefined
+  }
+
+  const service = contextKey.slice(0, colonIndex)
+  if (!(await iamServiceExists(service))) {
+    return undefined
+  }
+
+  const prefix = contextKey.slice(0, slashIndex + 1).toLowerCase()
+  const serviceKey = (await iamConditionKeysForService(service)).find((key) =>
+    key.toLowerCase().startsWith(prefix)
+  )
+  return serviceKey ? iamConditionKeyDetails(service, serviceKey) : undefined
 }
 
 /**

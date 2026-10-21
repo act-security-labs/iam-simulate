@@ -1,34 +1,29 @@
-import { type RequestAnalysis, type ResourceAnalysis } from '../evaluate.js'
+import { isIamUserArn } from '@actsecurity/iam-utils'
+import { type EvaluationResult, type RequestAnalysis, type ResourceAnalysis } from '../evaluate.js'
+import { type RequestPrincipal } from '../request/requestPrincipal.js'
 import { type RequestResource } from '../request/requestResource.js'
 import { DefaultServiceAuthorizer, type PrincipalAccountTrust } from './DefaultServiceAuthorizer.js'
 import { type ServiceAuthorizationRequest } from './ServiceAuthorizer.js'
 
-const actionsRequiringAuthenticatedPrincipal = new Set([
-  'sts:assumerole',
-  'sts:getcalleridentity',
-  'sts:getsessiontoken'
-])
+const actionsRequiringAuthenticatedPrincipal: readonly string[] = [
+  'sts:AssumeRole',
+  'sts:GetCallerIdentity',
+  'sts:GetSessionToken'
+]
 
 /**
  * Service authorizer for AWS Security Token Service requests.
  */
 export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
-  /**
-   * Authorizes an STS request, accounting for STS actions that cannot be called anonymously.
-   *
-   * @param request the service authorization request containing the principal and policy analyses.
-   * @returns the final STS authorization analysis.
-   */
+  /** Authorizes an STS request, answering actions decided by the caller alone without policy evaluation. */
   public override authorize(request: ServiceAuthorizationRequest): RequestAnalysis {
     const action = request.request.action.value()
     const principal = request.request.principal
 
-    if (
-      action.localeCompare('sts:getcalleridentity', undefined, { sensitivity: 'accent' }) === 0 &&
-      principal.isAuthenticated()
-    ) {
+    const policyFreeResult = resultWithoutPolicies({ action, principal })
+    if (policyFreeResult !== undefined) {
       return {
-        result: 'Allowed',
+        result: policyFreeResult,
         sameAccount: true,
         conditions: undefined
       }
@@ -37,7 +32,9 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
     const baseResult = super.authorize(request)
     if (
       principal.isAnonymous() &&
-      actionsRequiringAuthenticatedPrincipal.has(action.toLowerCase())
+      actionsRequiringAuthenticatedPrincipal.some((candidate) =>
+        isSameAction({ action, candidate })
+      )
     ) {
       return {
         ...baseResult,
@@ -78,4 +75,42 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
 
     return { trustType: 'None' }
   }
+}
+
+const rootArnRegex = /^arn:[a-zA-Z-]+:iam::\d{12}:root$/
+
+/** STS actions whose result depends only on the caller. */
+const resultForCallerByAction: readonly {
+  action: string
+  resultForCaller: (principalValue: string) => EvaluationResult
+}[] = [
+  { action: 'sts:GetCallerIdentity', resultForCaller: () => 'Allowed' },
+  {
+    action: 'sts:GetSessionToken',
+    resultForCaller: (principalValue) =>
+      isIamUserArn(principalValue) || rootArnRegex.test(principalValue)
+        ? 'Allowed'
+        : 'ImplicitlyDenied'
+  }
+]
+
+/** The result AWS gives an authenticated caller for an action decided by the caller alone, else undefined. */
+function resultWithoutPolicies({
+  action,
+  principal
+}: {
+  action: string
+  principal: RequestPrincipal
+}): EvaluationResult | undefined {
+  const entry = resultForCallerByAction.find((row) =>
+    isSameAction({ action, candidate: row.action })
+  )
+  if (entry === undefined || !principal.isAuthenticated()) {
+    return undefined
+  }
+  return entry.resultForCaller(principal.value())
+}
+
+function isSameAction({ action, candidate }: { action: string; candidate: string }): boolean {
+  return action.localeCompare(candidate, undefined, { sensitivity: 'accent' }) === 0
 }
