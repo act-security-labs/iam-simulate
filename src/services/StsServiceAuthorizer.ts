@@ -1,4 +1,4 @@
-import { isIamUserArn } from '@actsecurity/iam-utils'
+import { isIamUserArn, isRootArn } from '@actsecurity/iam-utils'
 import { type EvaluationResult, type RequestAnalysis, type ResourceAnalysis } from '../evaluate.js'
 import { type RequestPrincipal } from '../request/requestPrincipal.js'
 import { type RequestResource } from '../request/requestResource.js'
@@ -30,6 +30,18 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
     }
 
     const baseResult = super.authorize(request)
+    if (
+      principal.isAuthenticated() &&
+      isRootArn(principal.value()) &&
+      isSameAction({ action, candidate: 'sts:AssumeRole' })
+    ) {
+      return {
+        ...baseResult,
+        result: 'ImplicitlyDenied',
+        conditions: undefined
+      }
+    }
+
     if (
       principal.isAnonymous() &&
       actionsRequiringAuthenticatedPrincipal.some((candidate) =>
@@ -77,8 +89,6 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
   }
 }
 
-const rootArnRegex = /^arn:[a-zA-Z-]+:iam::\d{12}:root$/
-
 /** STS actions whose result depends only on the caller. */
 const resultForCallerByAction: readonly {
   action: string
@@ -88,9 +98,7 @@ const resultForCallerByAction: readonly {
   {
     action: 'sts:GetSessionToken',
     resultForCaller: (principalValue) =>
-      isIamUserArn(principalValue) || rootArnRegex.test(principalValue)
-        ? 'Allowed'
-        : 'ImplicitlyDenied'
+      isIamUserArn(principalValue) || isRootArn(principalValue) ? 'Allowed' : 'ImplicitlyDenied'
   }
 ]
 

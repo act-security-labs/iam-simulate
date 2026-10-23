@@ -278,5 +278,74 @@
     "expected": {
       "response": "ExplicitlyDenied"
     }
+  },
+  {
+    "name": "root principal requires an identity allow when a same-account KMS key policy allows its account",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:123456789012:key/1234",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:root",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": "kms:DescribeKey",
+          "Resource": "*",
+          "Principal": {
+            "AWS": "arn:aws:iam::123456789012:root"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "response": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "root principal is allowed when its identity policy also allows the KMS action",
+    "request": {
+      "action": "kms:DescribeKey",
+      "resource": {
+        "resource": "arn:aws:kms:us-east-1:123456789012:key/1234",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:root",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Action": "kms:DescribeKey",
+            "Resource": "arn:aws:kms:us-east-1:123456789012:key/1234"
+          }
+        ]
+      }
+    ],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": "kms:DescribeKey",
+          "Resource": "*",
+          "Principal": {
+            "AWS": "arn:aws:iam::123456789012:root"
+          }
+        }
+      ]
+    },
+    "expected": {
+      "response": "Allowed"
+    }
   }
 ]
