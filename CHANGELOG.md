@@ -1,3 +1,10 @@
+## [0.1.189](https://github.com/act-security-labs/iam-simulate/compare/v0.1.188...v0.1.189) (2026-10-24)
+
+
+### Features
+
+* support root principals ([#208](https://github.com/act-security-labs/iam-simulate/issues/208)) ([2d21d93](https://github.com/act-security-labs/iam-simulate/commit/2d21d93b2b22b8a7853b501893fdf3cb2f30d9f4))
+
 ## [0.1.188](https://github.com/act-security-labs/iam-simulate/compare/v0.1.187...v0.1.188) (2026-10-21)
 
 
