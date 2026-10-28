@@ -1,3 +1,10 @@
+## [0.1.191](https://github.com/act-security-labs/iam-simulate/compare/v0.1.190...v0.1.191) (2026-10-28)
+
+
+### Features
+
+* deny anonymous blocked actions ([#210](https://github.com/act-security-labs/iam-simulate/issues/210)) ([7690b05](https://github.com/act-security-labs/iam-simulate/commit/7690b054fe8ab04a2b0acc957b56da532e734a54))
+
 ## [0.1.190](https://github.com/act-security-labs/iam-simulate/compare/v0.1.189...v0.1.190) (2026-10-24)
 
 ## [0.1.189](https://github.com/act-security-labs/iam-simulate/compare/v0.1.188...v0.1.189) (2026-10-24)
