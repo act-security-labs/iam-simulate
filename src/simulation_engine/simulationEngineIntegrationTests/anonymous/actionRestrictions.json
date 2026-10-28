@@ -1,0 +1,110 @@
+[
+  {
+    "name": "anonymous request for iam-data marked action is implicitly denied despite public policy",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "ecr:BatchCheckLayerAvailability",
+            "Resource": "arn:aws:ecr:us-east-1:123456789012:repository/example"
+          }
+        ]
+      },
+      "request": {
+        "action": "ecr:BatchCheckLayerAvailability",
+        "resource": {
+          "resource": "arn:aws:ecr:us-east-1:123456789012:repository/example",
+          "accountId": "123456789012"
+        },
+        "principal": {
+          "type": "Anonymous"
+        },
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "results": [],
+      "overallResult": "ImplicitlyDenied",
+      "resultType": "single"
+    }
+  },
+  {
+    "name": "anonymous request for unmarked non-wildcard action is allowed by public policy",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/object.txt"
+          }
+        ]
+      },
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object.txt",
+          "accountId": "123456789012"
+        },
+        "principal": {
+          "type": "Anonymous"
+        },
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "results": [],
+      "overallResult": "Allowed",
+      "resultType": "single"
+    }
+  },
+  {
+    "name": "anonymous request for wildcard-only action is implicitly denied despite public policy",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:ListAllMyBuckets",
+            "Resource": "*"
+          }
+        ]
+      },
+      "request": {
+        "action": "s3:ListAllMyBuckets",
+        "resource": {
+          "resource": "*",
+          "accountId": "123456789012"
+        },
+        "principal": {
+          "type": "Anonymous"
+        },
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "results": [],
+      "overallResult": "ImplicitlyDenied",
+      "resultType": "single"
+    }
+  }
+]
