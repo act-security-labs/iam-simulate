@@ -29,6 +29,11 @@ export interface AwsRequest {
   wildcardOnlyAction: boolean
 
   /**
+   * Whether AWS rejects unsigned requests for the action regardless of resource policy.
+   */
+  actionBlockedForAnonymous: boolean
+
+  /**
    * The context of the request
    */
   context: RequestContext
@@ -51,8 +56,19 @@ export interface AwsRequest {
   getContextKeyValue(key: string): ContextKey
 }
 
+/**
+ * Concrete immutable request used by the synchronous policy authorization engine.
+ *
+ * @param principalInput the principal initiating the request.
+ * @param resourceIdentifier the resource ARN and account context for the request.
+ * @param actionString the IAM action being requested.
+ * @param context the request context available to policy conditions.
+ * @param wildcardOnlyAction whether the action only permits the wildcard resource.
+ * @param actionBlockedForAnonymous whether AWS rejects unsigned requests for the action.
+ */
 export class AwsRequestImpl implements AwsRequest {
   public readonly wildcardOnlyAction: boolean
+  public readonly actionBlockedForAnonymous: boolean
   private readonly requestPrincipal: RequestPrincipal
 
   constructor(
@@ -60,9 +76,11 @@ export class AwsRequestImpl implements AwsRequest {
     public readonly resourceIdentifier: { resource: string; accountId: string },
     public readonly actionString: string,
     public readonly context: RequestContext,
-    wildcardOnlyAction?: boolean
+    wildcardOnlyAction?: boolean,
+    actionBlockedForAnonymous?: boolean
   ) {
     this.wildcardOnlyAction = wildcardOnlyAction ?? false
+    this.actionBlockedForAnonymous = actionBlockedForAnonymous ?? false
     this.requestPrincipal = requestPrincipalFromInput(this.principalInput)
   }
 

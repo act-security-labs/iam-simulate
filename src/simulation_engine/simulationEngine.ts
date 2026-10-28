@@ -1,4 +1,9 @@
-import { iamActionExists, iamServiceExists, type ResourceType } from '@actsecurity/iam-data'
+import {
+  iamActionDetails,
+  iamActionExists,
+  iamServiceExists,
+  type ResourceType
+} from '@actsecurity/iam-data'
 import {
   isValidatedPolicy,
   loadPolicy,
@@ -24,7 +29,6 @@ import {
 import { type EvaluationResult, type RequestAnalysis } from '../evaluate.js'
 import { AwsRequestImpl } from '../request/request.js'
 import { RequestContextImpl } from '../requestContext.js'
-import { isWildcardOnlyAction } from '../util.js'
 import { allowedContextKeysForRequest } from './contextKeys.js'
 import { calculateOverallResult } from './overallResult.js'
 import { getMatchingResourceStringsForPolicies } from './policyResources.js'
@@ -431,7 +435,9 @@ export async function runSimulation(
     }
   }
 
-  const isWildCardOnlyAction = await isWildcardOnlyAction(service, action)
+  const actionDetails = await iamActionDetails(service, action)
+  const isWildCardOnlyAction = actionDetails.isWildcardOnly
+  const actionBlockedForAnonymous = actionDetails.blockAnon === true
   const runMultipleSimulations = resourceHasWildcard && !isWildCardOnlyAction
   let resourceTypes: ResourceType[] | undefined = undefined
   if (isWildCardOnlyAction) {
@@ -490,7 +496,8 @@ export async function runSimulation(
         },
         simulation.request.action,
         new RequestContextImpl(curriedContextValues),
-        isWildCardOnlyAction
+        isWildCardOnlyAction,
+        actionBlockedForAnonymous
       ),
       sessionPolicy,
       identityPolicies,

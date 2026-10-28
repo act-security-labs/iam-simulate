@@ -218,7 +218,8 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
   }
 
   /**
-   * Authorize an anonymous request after all policy analysis has been completed.
+   * Authorize an anonymous request after all policy analysis has been completed, applying
+   * action-level restrictions before resource-policy evaluation.
    *
    * @param request the service authorization request containing all analyses.
    * @param baseResult the common request-analysis fields to include in the result.
@@ -239,6 +240,16 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
       | 'blockedBy'
     >
   ): RequestAnalysis {
+    // AWS rejects unsigned requests for wildcard-only and marked actions before policy evaluation.
+    if (request.request.wildcardOnlyAction || request.request.actionBlockedForAnonymous) {
+      return {
+        result: 'ImplicitlyDenied',
+        ...baseResult,
+        sameAccount: false,
+        conditions: undefined
+      }
+    }
+
     const endpointPolicyResult = request.endpointAnalysis?.result
     const initialEvaluation = this.anonymousInitialEvaluationResult(request)
     const blockedByLog = new BlockedByLog(initialEvaluation.result)
