@@ -1,3 +1,10 @@
+## [0.1.192](https://github.com/act-security-labs/iam-simulate/compare/v0.1.191...v0.1.192) (2026-10-30)
+
+
+### Bug Fixes
+
+* align ignore-case string matching with IAM ([#211](https://github.com/act-security-labs/iam-simulate/issues/211)) ([f2344b2](https://github.com/act-security-labs/iam-simulate/commit/f2344b23552cdea60606c5c10000b3765daf090d))
+
 ## [0.1.191](https://github.com/act-security-labs/iam-simulate/compare/v0.1.190...v0.1.191) (2026-10-28)
 
 
