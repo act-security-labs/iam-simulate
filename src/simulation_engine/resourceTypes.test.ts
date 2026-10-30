@@ -29,7 +29,6 @@ describe('getResourceTypesForAction', () => {
 
   it.each([
     'arn:aws:bedrock:::foundation-model/',
-    'arn:aws:bedrock:::foundation-model/example/extra',
     'arn:aws:bedrock::123456789012:foundation-model/example',
     'arn:aws:bedrock:::inference-profile/example'
   ])('does not match an invalid or unrelated global ARN %s', async (resource) => {

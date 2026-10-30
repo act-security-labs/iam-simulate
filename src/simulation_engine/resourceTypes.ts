@@ -24,14 +24,6 @@ export async function getResourceTypesForAction(
     actionResourceTypes.push(await iamResourceTypeDetails(service, rt.name))
   }
 
-  // The catalog's regional template also represents global foundation model ARNs.
-  if (
-    service.toLowerCase() === 'bedrock' &&
-    /^arn:[^:]+:bedrock:::foundation-model\/[^/]+$/.test(resource)
-  ) {
-    return actionResourceTypes.filter((resourceType) => resourceType.key === 'foundation-model')
-  }
-
   const matchingPatterns = mostSpecificMatchingResourceTypePatterns(
     resource,
     actionResourceTypes.map((resourceType) => resourceType.arn)
