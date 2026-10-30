@@ -7,6 +7,7 @@ const matchesNothing = new RegExp('a^')
 export interface StringReplaceOptions {
   replaceWildcards: boolean
   convertToRegex: boolean
+  resolveLiteralEscapes?: boolean
 }
 
 const defaultStringReplaceOptions: StringReplaceOptions = {
@@ -51,6 +52,27 @@ export function convertIamString(
   }
 
   return { pattern: new RegExp('^' + newValue + '$') }
+}
+
+/**
+ * Resolve an IAM condition value as literal text, retaining variable resolution errors.
+ *
+ * @param value the IAM string to resolve
+ * @param request the request supplying policy variables
+ * @returns the resolved literal value and any resolution errors
+ */
+export function resolveIamConditionString(
+  value: string,
+  request: AwsRequest
+): { value: string; errors: string[] } {
+  const errors: string[] = []
+  const resolved = replaceIamStringTokens(
+    value,
+    request,
+    { replaceWildcards: false, convertToRegex: false, resolveLiteralEscapes: true },
+    errors
+  )
+  return { value: resolved, errors }
 }
 
 /**
@@ -136,11 +158,17 @@ function replaceIamStringToken(
   } else if (match == '*') {
     return replacementValue(match, '\\*', '.*?', options)
   } else if (match == '${*}') {
-    return replacementValue(match, '\\$\\{\\*\\}', '\\*', options)
+    return options.resolveLiteralEscapes
+      ? '*'
+      : replacementValue(match, '\\$\\{\\*\\}', '\\*', options)
   } else if (match == '${?}') {
-    return replacementValue(match, '\\$\\{\\?\\}', '\\?', options)
+    return options.resolveLiteralEscapes
+      ? '?'
+      : replacementValue(match, '\\$\\{\\?\\}', '\\?', options)
   } else if (match == '${$}') {
-    return replacementValue(match, '\\$\\{\\$\\}', '\\$', options)
+    return options.resolveLiteralEscapes
+      ? '$'
+      : replacementValue(match, '\\$\\{\\$\\}', '\\$', options)
   }
 
   //This means it's a variable
