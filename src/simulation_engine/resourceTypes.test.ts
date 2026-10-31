@@ -17,7 +17,8 @@ describe('getResourceTypesForAction', () => {
     ['regional', 'arn:aws:bedrock:us-east-1::foundation-model/example.model-v1:0'],
     ['China partition', 'arn:aws-cn:bedrock:::foundation-model/example.model-v1:0'],
     ['GovCloud partition', 'arn:aws-us-gov:bedrock:::foundation-model/example.model-v1:0'],
-    ['global wildcard', 'arn:aws:bedrock:::foundation-model/*']
+    ['global wildcard', 'arn:aws:bedrock:::foundation-model/*'],
+    ['global multi-segment resource pattern', 'arn:aws:bedrock:::foundation-model/example/extra']
   ])('matches the foundation model type for %s', async (_name, resource) => {
     //Given a valid regional or global model ARN
     //When the action's resource types are resolved
