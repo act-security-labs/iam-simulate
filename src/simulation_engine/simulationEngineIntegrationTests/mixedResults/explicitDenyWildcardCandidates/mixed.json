@@ -1,0 +1,111 @@
+[
+  {
+    "name": "wildcard simulation retains explicit resource, boundary, and RCP deny patterns beside an allowed pattern",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [
+        {
+          "orgIdentifier": "o-example",
+          "policies": [
+            {
+              "name": "rcp-deny",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Deny",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": "arn:aws:s3:::examplebucket/reports/rcp/*"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary-deny",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/boundary/*"
+              }
+            ]
+          }
+        }
+      ],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::examplebucket/reports/resource/*"
+          }
+        ]
+      },
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/boundary/*",
+          "result": "ExplicitlyDenied"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/rcp/*",
+          "result": "ExplicitlyDenied"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/resource/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  }
+]

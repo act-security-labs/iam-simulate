@@ -70,6 +70,25 @@
             ],
             "inverted": true
           }
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-allowed"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Deny",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
         }
       ]
     }
@@ -212,6 +231,27 @@
         {
           "resourceType": "object",
           "resourcePattern": "*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpc",
+            "values": ["vpc-allowed"],
+            "sources": [
+              {
+                "policyType": "rcp",
+                "effect": "Deny",
+                "statementIndex": 1,
+                "policyIdentifier": "NetworkGuard",
+                "orgIdentifier": "111111111111"
+              }
+            ],
+            "inverted": true
+          }
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/*",
           "result": "Allowed",
           "conditions": {
             "conditionType": "condition",
@@ -373,6 +413,25 @@
         {
           "resourceType": "object",
           "resourcePattern": "*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpce",
+            "values": ["vpce-allowed"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Deny",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/AWS_LOGS/*",
           "result": "Allowed",
           "conditions": {
             "conditionType": "condition",
@@ -568,6 +627,45 @@
               }
             ]
           }
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "group",
+            "operator": "and",
+            "conditions": [
+              {
+                "conditionType": "condition",
+                "op": "StringEquals",
+                "key": "aws:PrincipalTag/team",
+                "values": ["blue"],
+                "sources": [
+                  {
+                    "policyType": "identity",
+                    "effect": "Allow",
+                    "statementIndex": 1,
+                    "policyIdentifier": "ConditionalFullS3"
+                  }
+                ]
+              },
+              {
+                "conditionType": "condition",
+                "op": "StringEquals",
+                "key": "aws:SourceVpc",
+                "values": ["vpc-allowed"],
+                "sources": [
+                  {
+                    "policyType": "resource",
+                    "effect": "Deny",
+                    "statementIndex": 1
+                  }
+                ],
+                "inverted": true
+              }
+            ]
+          }
         }
       ]
     }
@@ -628,6 +726,25 @@
         {
           "resourceType": "object",
           "resourcePattern": "arn:aws:s3:::*/AWS_LOGS/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:SourceVpce",
+            "values": ["vpce-allowed"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Deny",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::demo-bucket/*",
           "result": "Allowed",
           "conditions": {
             "conditionType": "condition",

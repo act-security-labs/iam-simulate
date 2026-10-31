@@ -42,6 +42,11 @@
           "resourceType": "object",
           "resourcePattern": "arn:aws:s3:::examplebucket/public/*",
           "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/public/secret/*",
+          "result": "ExplicitlyDenied"
         }
       ],
       "overallResult": "Allowed",
@@ -90,6 +95,11 @@
         {
           "resourceType": "object",
           "resourcePattern": "arn:aws:s3:::examplebucket/public/secret/*",
+          "result": "ExplicitlyDenied"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/public/*",
           "result": "ExplicitlyDenied"
         }
       ],

@@ -16,6 +16,7 @@ import { expandShortArn, resourceArnsOverlap } from '../util/resourceStrings.js'
  * @param resourceType The resource type to filter resource strings by
  * @param resourceArnPattern The resource ARN pattern to match against
  * @param shouldExpandShortArns Whether to expand short ARNs (fewer than 6 segments) by padding with wildcards
+ * @param effect Statement effect to extract, defaulting to allow
  * @returns Array of unique resource strings that match the criteria
  */
 export function getMatchingResourceStringsForPolicies(
@@ -23,7 +24,8 @@ export function getMatchingResourceStringsForPolicies(
   action: string,
   resourceType: ResourceType,
   resourceArnPattern: string,
-  shouldExpandShortArns: boolean
+  shouldExpandShortArns: boolean,
+  effect: 'allow' | 'deny' = 'allow'
 ): string[] {
   const resourceStrings = new Set<string>()
   for (const policy of policies) {
@@ -36,7 +38,8 @@ export function getMatchingResourceStringsForPolicies(
         action,
         resourceType,
         resourceArnPattern,
-        shouldExpandShortArns
+        shouldExpandShortArns,
+        effect
       )
       for (const rs of stmtResourceStrings) {
         resourceStrings.add(rs)
@@ -47,28 +50,35 @@ export function getMatchingResourceStringsForPolicies(
 }
 
 /**
- * Extracts resource strings from a single policy statement that allows the specified action.
+ * Extracts resource strings from a policy statement with the requested effect on the action.
  *
  * @param statement The policy statement to analyze
- * @param action The action to check if the statement allows
+ * @param action The action to match against the statement
  * @param resourceType The resource type to filter by
  * @param resourceArnPattern The resource ARN pattern to match
  * @param shouldExpandShortArns Whether to expand short ARNs (fewer than 6 segments) by padding with wildcards
- * @returns Array of resource strings from the statement, or empty array if statement doesn't allow the action
+ * @param effect Statement effect to extract, defaulting to allow
+ * @returns Array of resource strings, or empty array if the statement does not match the action and effect
  */
 export function getResourceStringsFromStatement(
   statement: Statement,
   action: string,
   resourceType: ResourceType,
   resourceArnPattern: string,
-  shouldExpandShortArns: boolean
+  shouldExpandShortArns: boolean,
+  effect: 'allow' | 'deny' = 'allow'
 ): string[] {
-  if (statementAllowsAction(statement, action)) {
+  const actionMatches =
+    effect === 'allow'
+      ? statementAllowsAction(statement, action)
+      : statementDeniesAction(statement, action)
+  if (actionMatches) {
     return statementResourceStringsForResourceTypeAndPattern(
       statement,
       resourceType,
       resourceArnPattern,
-      shouldExpandShortArns
+      shouldExpandShortArns,
+      effect
     )
   }
   return []
@@ -81,15 +91,18 @@ export function getResourceStringsFromStatement(
  * @param resourceType The resource type to filter by
  * @param resourceArnPattern The resource ARN pattern to check for overlap
  * @param shouldExpandShortArns Whether to expand short ARNs (fewer than 6 segments) by padding with wildcards
+ * @param effect Statement effect to extract, defaulting to allow
  * @returns Array of matching resource strings, or ['*'] for certain NotResource cases
  */
 export function statementResourceStringsForResourceTypeAndPattern(
   statement: Statement,
   resourceType: ResourceType,
   resourceArnPattern: string,
-  shouldExpandShortArns: boolean
+  shouldExpandShortArns: boolean,
+  effect: 'allow' | 'deny' = 'allow'
 ): string[] {
-  if (statement.isResourceStatement() && statement.isAllow()) {
+  const hasRequestedEffect = effect === 'allow' ? statement.isAllow() : statement.isDeny()
+  if (statement.isResourceStatement() && hasRequestedEffect) {
     const resourceStrings: string[] = []
     for (const stmtResource of statement.resources()) {
       const effectiveValue = shouldExpandShortArns
@@ -104,7 +117,7 @@ export function statementResourceStringsForResourceTypeAndPattern(
     return resourceStrings
   }
 
-  if (statement.isNotResourceStatement() && statement.isAllow()) {
+  if (statement.isNotResourceStatement() && hasRequestedEffect) {
     for (const stmtNotResource of statement.notResources()) {
       const effectiveValue = shouldExpandShortArns
         ? expandShortArn(stmtNotResource.value())
@@ -148,6 +161,27 @@ export function statementAllowsAction(statement: Statement, action: string): boo
     return true
   }
 
+  return false
+}
+
+/**
+ * Determines if an explicit deny statement applies to an action.
+ *
+ * @param statement The policy statement to check
+ * @param action The action to test against the statement
+ * @returns true when the deny statement applies to the action
+ */
+function statementDeniesAction(statement: Statement, action: string): boolean {
+  if (statement.isActionStatement() && statement.isDeny()) {
+    return statement
+      .actions()
+      .some((statementAction) => actionMatchesPattern(action, statementAction.value()))
+  }
+  if (statement.isNotActionStatement() && statement.isDeny()) {
+    return !statement
+      .notActions()
+      .some((statementAction) => actionMatchesPattern(action, statementAction.value()))
+  }
   return false
 }
 

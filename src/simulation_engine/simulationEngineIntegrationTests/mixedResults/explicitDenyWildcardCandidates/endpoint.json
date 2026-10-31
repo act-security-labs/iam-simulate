@@ -1,0 +1,316 @@
+[
+  {
+    "name": "wildcard includes a child denied by endpoint policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      },
+      "vpcEndpointPolicies": [
+        {
+          "name": "endpoint",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*",
+                "Principal": "*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+                "Principal": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "endpoint conditional deny candidate with blocked context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "blocked"
+        }
+      },
+      "vpcEndpointPolicies": [
+        {
+          "name": "endpoint",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*",
+                "Principal": "*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+                "Principal": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "endpoint conditional deny candidate with unspecified context in discovery mode",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      },
+      "vpcEndpointPolicies": [
+        {
+          "name": "endpoint",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*",
+                "Principal": "*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+                "Principal": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": { "simulationMode": "Discovery" },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringNotEquals",
+            "key": "aws:PrincipalTag/team",
+            "values": ["blocked"],
+            "sources": [
+              {
+                "policyType": "endpointPolicy",
+                "policyIdentifier": "endpoint",
+                "effect": "Deny",
+                "statementIndex": 2
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "endpoint conditional deny candidate with safe context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "safe"
+        }
+      },
+      "vpcEndpointPolicies": [
+        {
+          "name": "endpoint",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*",
+                "Principal": "*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+                "Principal": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/endpoint/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  }
+]

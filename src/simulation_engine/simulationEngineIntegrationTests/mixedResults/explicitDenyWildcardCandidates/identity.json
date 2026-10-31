@@ -1,0 +1,276 @@
+[
+  {
+    "name": "wildcard includes a child denied by identity policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/identity/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/identity/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "identity conditional deny candidate with blocked context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/identity/*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "blocked"
+        }
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/identity/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "identity conditional deny candidate with safe context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/identity/*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "safe"
+        }
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/identity/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "identity NotAction deny includes requested action",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Resource": "arn:aws:s3:::examplebucket/reports/identity/*",
+                "NotAction": "s3:PutObject"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/identity/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "identity NotAction deny excludes requested action",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Resource": "arn:aws:s3:::examplebucket/reports/identity/*",
+                "NotAction": "s3:GetObject"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  }
+]
