@@ -2,6 +2,56 @@ import { describe, expect, it } from 'vitest'
 import { getResourceTypesForAction } from './resourceTypes.js'
 
 describe('getResourceTypesForAction', () => {
+  it('matches a regionless Bedrock foundation model for a supported action', async () => {
+    //Given a global Bedrock foundation model ARN
+    const resource = 'arn:aws:bedrock:::foundation-model/example.model-v1:0'
+
+    //When the action's resource types are resolved
+    const result = await getResourceTypesForAction('bedrock', 'GetFoundationModel', resource)
+
+    //Then the catalog foundation model type is returned
+    expect(result.map((type) => type.key)).toEqual(['foundation-model'])
+  })
+
+  it.each([
+    ['regional', 'arn:aws:bedrock:us-east-1::foundation-model/example.model-v1:0'],
+    ['China partition', 'arn:aws-cn:bedrock:::foundation-model/example.model-v1:0'],
+    ['GovCloud partition', 'arn:aws-us-gov:bedrock:::foundation-model/example.model-v1:0'],
+    ['global wildcard', 'arn:aws:bedrock:::foundation-model/*'],
+    ['global multi-segment resource pattern', 'arn:aws:bedrock:::foundation-model/example/extra']
+  ])('matches the foundation model type for %s', async (_name, resource) => {
+    //Given a valid regional or global model ARN
+    //When the action's resource types are resolved
+    const result = await getResourceTypesForAction('bedrock', 'GetFoundationModel', resource)
+
+    //Then the catalog foundation model type is returned
+    expect(result.map((type) => type.key)).toEqual(['foundation-model'])
+  })
+
+  it.each([
+    'arn:aws:bedrock:::foundation-model/',
+    'arn:aws:bedrock::123456789012:foundation-model/example',
+    'arn:aws:bedrock:::inference-profile/example'
+  ])('does not match an invalid or unrelated global ARN %s', async (resource) => {
+    //Given an empty model ID or unrelated resource
+    //When the action's resource types are resolved
+    const result = await getResourceTypesForAction('bedrock', 'GetFoundationModel', resource)
+
+    //Then no model type is returned
+    expect(result).toEqual([])
+  })
+
+  it('does not match a regionless foundation model for an unrelated Bedrock action', async () => {
+    //Given a foundation model ARN and an action for guardrails
+    const resource = 'arn:aws:bedrock:::foundation-model/example.model-v1:0'
+
+    //When the action's resource types are resolved
+    const result = await getResourceTypesForAction('bedrock', 'ApplyGuardrail', resource)
+
+    //Then no resource type is returned
+    expect(result).toEqual([])
+  })
+
   it('should return the type for a resource', async () => {
     //Given a resource id and action
     const service = 's3'

@@ -1,0 +1,422 @@
+[
+  {
+    "name": "regionless model allowed by exact identity policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "model-access",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": []
+    }
+  },
+  {
+    "name": "regionless model not allowed by a regional model policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "regional-only",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:us-east-1::foundation-model/example.model-v1:0"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": []
+    }
+  },
+  {
+    "name": "regional model not allowed by a regionless model policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "global-only",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:us-east-1::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": []
+    }
+  },
+  {
+    "name": "regional model still allowed by exact identity policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "regional",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:us-east-1::foundation-model/example.model-v1:0"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:us-east-1::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": []
+    }
+  },
+  {
+    "name": "regionless model explicit identity deny overrides allow",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "model-access",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ExplicitlyDenied",
+      "results": []
+    }
+  },
+  {
+    "name": "regionless wildcard model request retains the policy pattern",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "model-access",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/example.*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "foundation-model",
+          "resourcePattern": "arn:aws:bedrock:::foundation-model/example.*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "regionless model is restricted by permission boundary",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/other.model"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": []
+    }
+  },
+  {
+    "name": "regionless model explicit SCP deny overrides identity allow",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [
+        {
+          "orgIdentifier": "o-example",
+          "policies": [
+            {
+              "name": "scp",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Effect": "Allow",
+                    "Action": "*",
+                    "Resource": "*"
+                  },
+                  {
+                    "Effect": "Deny",
+                    "Action": "bedrock:InvokeModel",
+                    "Resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ExplicitlyDenied",
+      "results": []
+    }
+  },
+  {
+    "name": "regionless model policy in another partition does not grant access",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "other-partition",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws-cn:bedrock:::foundation-model/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": []
+    }
+  },
+  {
+    "name": "question mark in identity policy matches a regionless model",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "model-access",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "bedrock:InvokeModel",
+                "Resource": "arn:aws:bedrock:::foundation-model/example.model-v1:?"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "bedrock:InvokeModel",
+        "resource": {
+          "resource": "arn:aws:bedrock:::foundation-model/example.model-v1:0",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/TestRole",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": []
+    }
+  }
+]
