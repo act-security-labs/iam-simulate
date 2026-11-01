@@ -52,7 +52,7 @@
   "dependencies": {
     "@actsecurity/iam-data": ">=0.22.202610281 <1.0.0",
     "@actsecurity/iam-policy": "^0.1.89",
-    "@actsecurity/iam-utils": "^0.1.93"
+    "@actsecurity/iam-utils": "^0.1.96"
   },
   "prettier": "@actsecurity/prettier-config",
   "release": {
