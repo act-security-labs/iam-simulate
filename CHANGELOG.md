@@ -1,3 +1,10 @@
+## [0.1.196](https://github.com/act-security-labs/iam-simulate/compare/v0.1.195...v0.1.196) (2026-11-01)
+
+
+### Bug Fixes
+
+* support global Bedrock foundation model resources ([#214](https://github.com/act-security-labs/iam-simulate/issues/214)) ([5ea4bf2](https://github.com/act-security-labs/iam-simulate/commit/5ea4bf214d8b60aa2ea0b30592cd3234f476ff81))
+
 ## [0.1.195](https://github.com/act-security-labs/iam-simulate/compare/v0.1.194...v0.1.195) (2026-11-01)
 
 
