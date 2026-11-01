@@ -42,6 +42,11 @@
           "resourceType": "object",
           "resourcePattern": "arn:aws:s3:::examplebucket/public/*",
           "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/private/*",
+          "result": "ExplicitlyDenied"
         }
       ],
       "overallResult": "Allowed",

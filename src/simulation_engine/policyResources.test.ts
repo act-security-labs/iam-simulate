@@ -374,6 +374,30 @@ describe('getResourceStringsFromStatement', () => {
   }
 })
 
+describe('getResourceStringsFromStatement denied patterns', () => {
+  it('returns an explicit deny resource that overlaps a wildcard request', () => {
+    //Given an explicit deny on a child pattern
+    const statement = getStatement({
+      Effect: 'Deny',
+      Action: 's3:GetObject',
+      Resource: 'arn:aws:s3:::my-bucket/private/*'
+    })
+
+    //When candidate patterns are collected for denied access
+    const result = getResourceStringsFromStatement(
+      statement,
+      's3:GetObject',
+      s3ObjectType,
+      'arn:aws:s3:::my-bucket/*',
+      true,
+      'deny'
+    )
+
+    //Then the denied child pattern is retained
+    expect(result).toEqual(['arn:aws:s3:::my-bucket/private/*'])
+  })
+})
+
 describe('getMatchingResourceStringsForPolicies', () => {
   for (const testCase of getMatchingResourceStringsForPoliciesTests) {
     it(testCase.name, () => {

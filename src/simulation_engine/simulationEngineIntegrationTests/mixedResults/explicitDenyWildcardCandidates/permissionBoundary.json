@@ -1,0 +1,370 @@
+[
+  {
+    "name": "wildcard includes a child denied by boundary policy",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {}
+      },
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/boundary/*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/boundary/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "conditional boundary deny with blocked context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "blocked"
+        }
+      },
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/boundary/*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/boundary/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "conditional boundary deny with safe context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "safe"
+        }
+      },
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/boundary/*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/boundary/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "boundary conditional deny candidate with blocked context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "blocked"
+        }
+      },
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/boundary/*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/boundary/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
+  },
+  {
+    "name": "boundary conditional deny candidate with safe context",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "identity-allow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": {
+          "aws:PrincipalTag/team": "safe"
+        }
+      },
+      "permissionBoundaryPolicies": [
+        {
+          "name": "boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/reports/boundary/*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:PrincipalTag/team": "blocked"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::examplebucket/reports/boundary/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  }
+]
