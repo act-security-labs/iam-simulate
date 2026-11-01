@@ -1,3 +1,10 @@
+## [0.1.195](https://github.com/act-security-labs/iam-simulate/compare/v0.1.194...v0.1.195) (2026-11-01)
+
+
+### Features
+
+* include denied wildcard resource patterns ([#215](https://github.com/act-security-labs/iam-simulate/issues/215)) ([70a295c](https://github.com/act-security-labs/iam-simulate/commit/70a295cac5498fdda84a97e92f16a2e2dbd1ce7c))
+
 ## [0.1.194](https://github.com/act-security-labs/iam-simulate/compare/v0.1.193...v0.1.194) (2026-10-31)
 
 ## [0.1.193](https://github.com/act-security-labs/iam-simulate/compare/v0.1.192...v0.1.193) (2026-10-31)
