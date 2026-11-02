@@ -1,3 +1,4 @@
+import { equalsIgnoreCase } from '@actsecurity/iam-utils'
 import { type Principal, type Statement } from '@actsecurity/iam-policy'
 import {
   convertAssumedRoleArnToRoleArn,
@@ -424,7 +425,7 @@ function roleArnMatchesAssumedRoleSession(roleArn: string, sessionArn: string): 
     return false
   }
 
-  return roleName.localeCompare(sessionRoleName, 'en', { sensitivity: 'base' }) === 0
+  return equalsIgnoreCase(roleName, sessionRoleName)
 }
 
 /**

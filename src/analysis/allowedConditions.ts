@@ -1,3 +1,4 @@
+import { equalsIgnoreCase } from '@actsecurity/iam-utils'
 import { type Condition } from '@actsecurity/iam-policy'
 import {
   type AllowedConditionExpression,
@@ -398,7 +399,7 @@ function invertConditionParts(
     return and([leaf('Null', key, ['false'], source), invertedBase])
   }
 
-  if (base.toLowerCase() === 'null' || base.toLowerCase() === 'bool') {
+  if (equalsIgnoreCase(base, 'null') || equalsIgnoreCase(base, 'bool')) {
     return leaf(
       invertedOperatorName(op, base, setOperator, hasIfExists),
       key,
@@ -468,7 +469,7 @@ function invertedOperatorName(
   setOperator: 'ForAllValues' | 'ForAnyValue' | undefined,
   hasIfExists: boolean
 ): string {
-  if (base.toLowerCase() === 'bool' || base.toLowerCase() === 'null') {
+  if (equalsIgnoreCase(base, 'bool') || equalsIgnoreCase(base, 'null')) {
     return operatorName(base, setOperator, hasIfExists)
   }
   return originalOp
@@ -564,7 +565,7 @@ function canonicalBaseOperator(base: string): string {
 }
 
 function flipBooleanValues(values: string[]): string[] {
-  return values.map((value) => (value.toLowerCase() === 'true' ? 'false' : 'true'))
+  return values.map((value) => (equalsIgnoreCase(value, 'true') ? 'false' : 'true'))
 }
 
 function publicExpression(

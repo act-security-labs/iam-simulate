@@ -1,3 +1,4 @@
+import { equalsIgnoreCase } from '@actsecurity/iam-utils'
 import { type Condition } from '@actsecurity/iam-policy'
 import { type SimulationParameters } from '../core_engine/CoreSimulatorEngine.js'
 import {
@@ -269,7 +270,7 @@ function evaluateSingleCondition(
     keyExists
   )
 
-  if (condition.operation().value().toLowerCase() == 'null') {
+  if (equalsIgnoreCase(condition.operation().value(), 'null')) {
     return {
       explain: testNull(condition, keyExists),
       knowledge: conditionKnowledgeForPresenceOnly(contextKeyKnowledge)
@@ -457,7 +458,7 @@ function allowHasUnknownPresenceRequirement(conditionAndExplain: ConditionAndExp
   }
 
   const operation = conditionAndExplain.condition.operation()
-  if (operation.value().toLowerCase() === 'null') {
+  if (equalsIgnoreCase(operation.value(), 'null')) {
     return true
   }
 
@@ -600,7 +601,7 @@ function testNull(condition: Condition, keyExists: boolean): ConditionExplain {
   const conditionValues: ConditionValueExplain[] = condition.conditionValues().map((value) => {
     return {
       value,
-      matches: value.toLowerCase() === goalValue
+      matches: equalsIgnoreCase(value, goalValue)
     }
   })
   const matches = conditionValues.some((value) => value.matches)

@@ -629,6 +629,37 @@ describe('requestMatchesPrincipalStatement', () => {
       )
     })
 
+    it.each([
+      ['Σ', 'ς', 'SessionRoleMatch'],
+      ['café', 'cafe', 'NoMatch']
+    ])(
+      'compares role name %s and session role %s using case folding',
+      (role, sessionRole, expected) => {
+        //Given a role principal and an assumed-role session
+        const policy = loadPolicy({
+          Statement: [{ Principal: { AWS: `arn:aws:iam::555555555555:role/team/${role}` } }]
+        })
+        const principalStatement = (policy.statements()[0] as PrincipalStatement).principals()[0]
+        const request = new AwsRequestImpl(
+          `arn:aws:sts::555555555555:assumed-role/${sessionRole}/session-name`,
+          defaultResource,
+          's3:GetBucket',
+          new RequestContextImpl({})
+        )
+
+        //When matching the request principal
+        const result = requestMatchesPrincipalStatement(
+          request,
+          principalStatement,
+          defaultSimulationParameters,
+          'Allow'
+        )
+
+        //Then Unicode case variants match but accent differences do not
+        expect(result.explain.matches).toBe(expected)
+      }
+    )
+
     it('role arn with a path does not match a session for a different role name', () => {
       //Given a policy principal statement for a role with a path
       const policy = loadPolicy({
