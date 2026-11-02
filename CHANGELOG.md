@@ -1,3 +1,10 @@
+## [0.1.197](https://github.com/act-security-labs/iam-simulate/compare/v0.1.196...v0.1.197) (2026-11-02)
+
+
+### Features
+
+* standardize case-insensitive comparisons ([#216](https://github.com/act-security-labs/iam-simulate/issues/216)) ([929db69](https://github.com/act-security-labs/iam-simulate/commit/929db69f44f6afe8bd836b09929e5007c5c7a03b))
+
 ## [0.1.196](https://github.com/act-security-labs/iam-simulate/compare/v0.1.195...v0.1.196) (2026-11-01)
 
 
