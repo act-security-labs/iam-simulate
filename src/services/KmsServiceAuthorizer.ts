@@ -1,3 +1,4 @@
+import { equalsIgnoreCase } from '@actsecurity/iam-utils'
 import { type RequestAnalysis, type ResourceAnalysis } from '../evaluate.js'
 import { type RequestResource } from '../request/requestResource.js'
 import { DefaultServiceAuthorizer, type PrincipalAccountTrust } from './DefaultServiceAuthorizer.js'
@@ -27,11 +28,9 @@ function usesKmsKeyPrincipalAccountTrust(resource: RequestResource): boolean {
  * @returns true when the resource is an alias/aws/... ARN resource
  */
 function isAwsManagedAlias(resource: RequestResource): boolean {
-  return (
-    resource
-      .resource()
-      .slice(0, awsManagedAliasPrefix.length)
-      .localeCompare(awsManagedAliasPrefix, undefined, { sensitivity: 'accent' }) === 0
+  return equalsIgnoreCase(
+    resource.resource().slice(0, awsManagedAliasPrefix.length),
+    awsManagedAliasPrefix
   )
 }
 

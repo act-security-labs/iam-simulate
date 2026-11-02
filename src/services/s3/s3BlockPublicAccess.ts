@@ -1,3 +1,4 @@
+import { equalsIgnoreCase } from '@actsecurity/iam-utils'
 import { type Policy, type Statement } from '@actsecurity/iam-policy'
 import { splitArnParts } from '../../util.js'
 
@@ -238,7 +239,7 @@ function hasAwsServicePrincipalLimitingCondition(
   return conditionEntries(conditionMap, 'aws:PrincipalIsAWSService').some(
     ({ operator, values }) =>
       ['Bool', 'StringEquals', 'StringEqualsIgnoreCase', 'StringLike'].includes(operator) &&
-      values.every((value) => value.toLowerCase() === 'true')
+      values.every((value) => equalsIgnoreCase(value, 'true'))
   )
 }
 
@@ -313,7 +314,7 @@ function conditionEntries(
   const entries: Array<{ operator: string; values: string[] }> = []
   for (const [operator, keyValues] of Object.entries(conditionMap)) {
     for (const [conditionKey, values] of Object.entries(keyValues)) {
-      if (conditionKey.toLowerCase() === key.toLowerCase()) {
+      if (equalsIgnoreCase(conditionKey, key)) {
         entries.push({ operator, values })
       }
     }

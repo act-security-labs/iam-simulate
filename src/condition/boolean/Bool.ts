@@ -1,3 +1,4 @@
+import { equalsIgnoreCase } from '@actsecurity/iam-utils'
 import { type ConditionValueExplain } from '../../explain/statementExplain.js'
 import { convertIamString } from '../../util.js'
 import { type BaseConditionOperator } from '../BaseConditionOperator.js'
@@ -21,9 +22,7 @@ export const Bool: BaseConditionOperator = {
         replaceWildcards: false,
         convertToRegex: false
       })
-      const lowercaseResolvedValue = resolvedValue.toLowerCase()
-
-      if (lowercaseResolvedValue != 'true' && lowercaseResolvedValue != 'false') {
+      if (!equalsIgnoreCase(resolvedValue, 'true') && !equalsIgnoreCase(resolvedValue, 'false')) {
         return {
           matches: false,
           value: policyValue,
@@ -32,7 +31,7 @@ export const Bool: BaseConditionOperator = {
         }
       }
 
-      if (keyValue.toLowerCase() != 'true' && keyValue.toLowerCase() != 'false') {
+      if (!equalsIgnoreCase(keyValue, 'true') && !equalsIgnoreCase(keyValue, 'false')) {
         return {
           matches: false,
           value: policyValue,

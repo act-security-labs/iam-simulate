@@ -1,4 +1,4 @@
-import { isIamUserArn, isRootArn } from '@actsecurity/iam-utils'
+import { equalsIgnoreCase, isIamUserArn, isRootArn } from '@actsecurity/iam-utils'
 import { type EvaluationResult, type RequestAnalysis, type ResourceAnalysis } from '../evaluate.js'
 import { type RequestPrincipal } from '../request/requestPrincipal.js'
 import { type RequestResource } from '../request/requestResource.js'
@@ -120,5 +120,5 @@ function resultWithoutPolicies({
 }
 
 function isSameAction({ action, candidate }: { action: string; candidate: string }): boolean {
-  return action.localeCompare(candidate, undefined, { sensitivity: 'accent' }) === 0
+  return equalsIgnoreCase(action, candidate)
 }
