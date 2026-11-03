@@ -1,3 +1,10 @@
+## [0.1.198](https://github.com/act-security-labs/iam-simulate/compare/v0.1.197...v0.1.198) (2026-11-03)
+
+
+### Bug Fixes
+
+* align context key identity with IAM ([#217](https://github.com/act-security-labs/iam-simulate/issues/217)) ([05d7915](https://github.com/act-security-labs/iam-simulate/commit/05d7915f8a635785adcd19208c51512c1a4f1911))
+
 ## [0.1.197](https://github.com/act-security-labs/iam-simulate/compare/v0.1.196...v0.1.197) (2026-11-02)
 
 
