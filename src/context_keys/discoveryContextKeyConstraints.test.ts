@@ -39,6 +39,34 @@ describe('DiscoveryContextKeyConstraints', () => {
     })
   })
 
+  it('matches literal constraints across Unicode case variants', () => {
+    //Given a known literal context key constraint
+    const constraints = new DiscoveryContextKeyConstraints([
+      { keyName: 'aws:ResourceTag/σ', presenceIsKnown: true, valueIsKnown: true }
+    ])
+
+    //When looking up an equivalent final-sigma key
+    const result = constraints.constraintFor('aws:ResourceTag/ς')
+
+    //Then the literal constraint applies
+    expect(result).toEqual({
+      presenceIsKnown: true,
+      valueIsKnown: true,
+      explicitlyConfigured: true
+    })
+  })
+
+  it('does not reuse a regex-only result for another Unicode-equivalent literal key', () => {
+    //Given a regex whose JavaScript matching distinguishes dotted and plain i
+    const constraints = new DiscoveryContextKeyConstraints([
+      { keyName: '/^aws:ResourceTag\\/i$/', presenceIsKnown: true, valueIsKnown: true }
+    ])
+
+    //When matching plain i and then dotted capital I
+    expect(constraints.constraintFor('aws:ResourceTag/i').explicitlyConfigured).toBe(true)
+    expect(constraints.constraintFor('aws:ResourceTag/İ').explicitlyConfigured).toBe(false)
+  })
+
   it('should match prefix regex constraints', () => {
     //Given a prefix-style regex constraint
     const constraints = new DiscoveryContextKeyConstraints([

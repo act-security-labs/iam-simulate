@@ -17,6 +17,15 @@ The simulator currently supports these features of AWS IAM
 - Same Account and Cross Account Requests
 - Custom trust behavior for IAM Trust Policies and KMS Key Policies
 
+### IAM string-value comparisons
+
+The package exports `iamStringEquals`, `iamStringEqualsIgnoreCase`, and
+`iamStringEqualsNormalizeCaseInsensitive` for comparing or indexing **already-resolved literal
+condition values**. They do not resolve policy variables or evaluate condition operators. The
+ignore-case helper and normalizer apply the same per-UTF-16-code-unit lowercase mapping used by
+the IAM `StringEqualsIgnoreCase` implementation. This behavior is an empirical approximation of
+the AWS IAM policy simulator and depends on the JavaScript runtime's Unicode mappings.
+
 ### Request Validation
 
 iam-simulate will automatically validate inputs including

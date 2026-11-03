@@ -469,6 +469,44 @@ describe('normalizeSimulationParameters', () => {
 })
 
 describe('runSimulation', () => {
+  it('matches Unicode case variants in context key names during policy evaluation', async () => {
+    //Given an identity policy checking one spelling of a resource tag key
+    const simulation: Simulation = {
+      identityPolicies: [
+        {
+          name: 'resource-tag-condition',
+          policy: {
+            Statement: {
+              Effect: 'Allow',
+              Action: 's3:GetObject',
+              Resource: '*',
+              Condition: { StringEquals: { 'aws:ResourceTag/σ': 'yes' } }
+            }
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: [],
+      resourcePolicy: undefined,
+      additionalSettings: { s3: { bucketAbacEnabled: true } },
+      request: {
+        action: 's3:GetObject',
+        resource: { resource: 'arn:aws:s3:::examplebucket/key', accountId: '123456789012' },
+        principal: 'arn:aws:iam::123456789012:user/Example',
+        contextVariables: { 'aws:ResourceTag/ς': 'yes' }
+      }
+    }
+
+    //When the request is evaluated with the equivalent final-sigma key
+    const response = await runSimulation(simulation, {})
+
+    //Then the condition matches and the request is allowed
+    expect(response.resultType).toBe('single')
+    if (response.resultType !== 'single') {
+      throw new Error('Expected a single result')
+    }
+    expect(response.result.analysis?.result).toBe('Allowed')
+  })
   interface PolicyErrorCase {
     name: string
     badPolicy: any
