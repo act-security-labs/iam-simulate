@@ -1,3 +1,10 @@
+## [0.1.199](https://github.com/act-security-labs/iam-simulate/compare/v0.1.198...v0.1.199) (2026-11-03)
+
+
+### Bug Fixes
+
+* expand short identity deny ARNs in wildcard simulations ([#218](https://github.com/act-security-labs/iam-simulate/issues/218)) ([1ae2ee5](https://github.com/act-security-labs/iam-simulate/commit/1ae2ee5b12892850258b63ed674e02268da104d6))
+
 ## [0.1.198](https://github.com/act-security-labs/iam-simulate/compare/v0.1.197...v0.1.198) (2026-11-03)
 
 
