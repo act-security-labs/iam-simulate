@@ -1,5 +1,60 @@
 [
   {
+    "name": "resource policy shortened deny ARN is not expanded for candidate discovery",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "IdentityAllow",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::example-bucket/reports/*"
+              }
+            ]
+          }
+        }
+      ],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3::",
+            "Condition": { "StringEquals": { "aws:SourceVpc": "vpc-blocked" } }
+          }
+        ]
+      },
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/reports/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:role/Reader",
+        "contextVariables": { "aws:SourceVpc": "vpc-allowed" }
+      }
+    },
+    "simulationOptions": { "simulationMode": "Strict" },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::example-bucket/reports/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
     "name": "wildcard includes a child denied by resource policy",
     "simulation": {
       "identityPolicies": [
