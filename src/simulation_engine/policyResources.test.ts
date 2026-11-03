@@ -375,6 +375,37 @@ describe('getResourceStringsFromStatement', () => {
 })
 
 describe('getResourceStringsFromStatement denied patterns', () => {
+  it('expands a shortened deny ARN only when requested by the policy source', () => {
+    //Given a deny with an abbreviated S3 ARN
+    const statement = getStatement({
+      Effect: 'Deny',
+      Action: 's3:GetObject',
+      Resource: 'arn:aws:s3::'
+    })
+
+    //When candidates are collected with and without short-ARN expansion
+    const expanded = getResourceStringsFromStatement(
+      statement,
+      's3:GetObject',
+      s3ObjectType,
+      'arn:aws:s3:::example-bucket/*',
+      true,
+      'deny'
+    )
+    const unexpanded = getResourceStringsFromStatement(
+      statement,
+      's3:GetObject',
+      s3ObjectType,
+      'arn:aws:s3:::example-bucket/*',
+      false,
+      'deny'
+    )
+
+    //Then expansion finds the original candidate and the unexpanded lookup does not
+    expect(expanded).toEqual(['arn:aws:s3::'])
+    expect(unexpanded).toEqual([])
+  })
+
   it('returns an explicit deny resource that overlaps a wildcard request', () => {
     //Given an explicit deny on a child pattern
     const statement = getStatement({

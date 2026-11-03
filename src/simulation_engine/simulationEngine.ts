@@ -519,8 +519,7 @@ export async function runSimulation(
 
   const identityPoliciesThatGrantAccess: (PolicyWithName | undefined)[] = [...identityPolicies]
   const resourcePoliciesThatGrantAccess: (PolicyWithName | undefined)[] = [resourcePolicy]
-  const policiesThatCanDenyAccess: (PolicyWithName | undefined)[] = [
-    ...identityPolicies,
+  const otherPoliciesThatCanDenyAccess: (PolicyWithName | undefined)[] = [
     sessionPolicy,
     ...(vpcEndpointPolicies ?? []),
     ...serviceControlPolicies.flatMap((controlPolicies) => controlPolicies.policies),
@@ -586,8 +585,16 @@ export async function runSimulation(
         simulation.request.resource.resource,
         false
       )
+      const identityDeniedResourceStrings = getMatchingResourceStringsForPolicies(
+        identityPolicies,
+        simulation.request.action,
+        resourceType,
+        simulation.request.resource.resource,
+        true,
+        'deny'
+      )
       const deniedResourceStrings = getMatchingResourceStringsForPolicies(
-        policiesThatCanDenyAccess,
+        otherPoliciesThatCanDenyAccess,
         simulation.request.action,
         resourceType,
         simulation.request.resource.resource,
@@ -598,6 +605,7 @@ export async function runSimulation(
         ...new Set([
           ...identityResourceStrings,
           ...resourcePolicyResourceStrings,
+          ...identityDeniedResourceStrings,
           ...deniedResourceStrings
         ])
       ]
