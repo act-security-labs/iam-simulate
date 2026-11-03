@@ -5,6 +5,11 @@ export {
   type RequestGrant,
   type RequestDenial
 } from './analysis/analyzeResults.js'
+export {
+  iamStringEquals,
+  iamStringEqualsIgnoreCase,
+  iamStringEqualsNormalizeCaseInsensitive
+} from './condition/string/ignoreCaseEquals.js'
 export { typeForContextKey } from './context_keys/contextKeys.js'
 export {
   isConditionKeyArray,

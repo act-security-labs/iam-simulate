@@ -1,3 +1,5 @@
+import { normalizeCaseInsensitive } from '@actsecurity/iam-utils'
+
 /** Shared key or pattern field for Discovery context-key constraints. */
 interface DiscoveryContextKeyConstraintKey {
   /**
@@ -160,7 +162,8 @@ export class DiscoveryContextKeyConstraints {
    */
   public constraintFor(key: string): EffectiveDiscoveryContextKeyConstraint {
     const lowerKey = key.toLowerCase()
-    const cached = this.resolvedCache.get(lowerKey)
+    // Regex matching can distinguish names that normalizeCaseInsensitive equates.
+    const cached = this.resolvedCache.get(key)
     if (cached) {
       return cached
     }
@@ -174,7 +177,7 @@ export class DiscoveryContextKeyConstraints {
       )
     }
 
-    const literal = this.literalConstraints.get(lowerKey)
+    const literal = this.literalConstraints.get(normalizeCaseInsensitive(key))
     if (literal) {
       merge(literal)
     }
@@ -193,7 +196,7 @@ export class DiscoveryContextKeyConstraints {
       }
     }
 
-    this.resolvedCache.set(lowerKey, result)
+    this.resolvedCache.set(key, result)
     return result
   }
 
@@ -221,7 +224,7 @@ export class DiscoveryContextKeyConstraints {
         this.regexConstraints.push({ ...stored, pattern: new RegExp(patternText, 'i') })
       }
     } else {
-      const key = constraint.keyName.toLowerCase()
+      const key = normalizeCaseInsensitive(constraint.keyName)
       const existing = this.literalConstraints.get(key)
       this.literalConstraints.set(key, existing ? mergeStored(existing, stored) : stored)
     }

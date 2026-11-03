@@ -1,3 +1,5 @@
+import { normalizeCaseInsensitive } from '@actsecurity/iam-utils'
+
 /**
  * The context metadata available in a request
  */
@@ -58,16 +60,16 @@ export class RequestContextImpl implements RequestContext {
 
   constructor(values: Record<string, string | string[]>) {
     for (const key in values) {
-      this.context.set(key.toLowerCase(), new ContextKeyImpl(key, values[key]))
+      this.context.set(normalizeCaseInsensitive(key), new ContextKeyImpl(key, values[key]))
     }
   }
 
   public contextKeyExists(name: string): boolean {
-    return this.context.has(name.toLowerCase())
+    return this.context.has(normalizeCaseInsensitive(name))
   }
 
   public contextKeyValue(name: string): ContextKey {
-    return this.context.get(name.toLowerCase()) as ContextKey
+    return this.context.get(normalizeCaseInsensitive(name)) as ContextKey
   }
 }
 
