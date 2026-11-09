@@ -1,3 +1,10 @@
+## [0.1.201](https://github.com/act-security-labs/iam-simulate/compare/v0.1.200...v0.1.201) (2026-11-09)
+
+
+### Bug Fixes
+
+* stagger dependency update schedule ([#220](https://github.com/act-security-labs/iam-simulate/issues/220)) ([08fcee1](https://github.com/act-security-labs/iam-simulate/commit/08fcee1cee80a93e0b3570dfdd5c89a481471d95))
+
 ## [0.1.200](https://github.com/act-security-labs/iam-simulate/compare/v0.1.199...v0.1.200) (2026-11-08)
 
 ## [0.1.199](https://github.com/act-security-labs/iam-simulate/compare/v0.1.198...v0.1.199) (2026-11-03)
