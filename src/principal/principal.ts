@@ -3,6 +3,7 @@ import { type Principal, type Statement } from '@actsecurity/iam-policy'
 import {
   convertAssumedRoleArnToRoleArn,
   isAssumedRoleArn,
+  isCloudFrontOriginAccessUserArn,
   isFederatedUserArn,
   isIamRoleArn,
   splitArnParts
@@ -139,8 +140,23 @@ export function requestMatchesNotPrincipal(
      * We need to test this.
      */
 
+    // Live S3 probes showed this exact Deny NotPrincipal service form does not
+    // deny a legacy OAI, even though OAI is not a service principal. Limit the
+    // exception to the tested commercial partition and single service element.
+    const principal = request.principal
+    const observedOaiServiceException =
+      allowOrDeny === 'Deny' &&
+      request.action.service() === 's3' &&
+      principal.isAuthenticated() &&
+      principal.value().startsWith('arn:aws:iam::cloudfront:') &&
+      isCloudFrontOriginAccessUserArn(principal.value()) &&
+      notPrincipal.length === 1 &&
+      principalStatement.isServicePrincipal() &&
+      principalStatement.service() === 'cloudfront.amazonaws.com'
+
     // Invert the match result for NotPrincipal
     if (
+      observedOaiServiceException ||
       analysis.explain.matches === 'Match' ||
       analysis.explain.matches === 'AccountLevelMatch' ||
       analysis.explain.matches === 'SessionRoleMatch' ||
