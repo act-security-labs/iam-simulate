@@ -78,6 +78,9 @@ describe('simulationEngineIntegration', () => {
           }
 
           if (response.resultType === 'single') {
+            if (testCase.expected.results[0]?.resourceType !== undefined) {
+              expect(response.result.resourceType).toBe(testCase.expected.results[0].resourceType)
+            }
             if (testCase.expected.results[0]?.conditions) {
               expect(response.result.analysis.conditions).toEqual(
                 testCase.expected.results[0].conditions
