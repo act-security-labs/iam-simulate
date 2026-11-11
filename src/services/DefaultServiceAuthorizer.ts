@@ -97,7 +97,7 @@ class BlockedByLog {
   }
 }
 
-interface InitialEvaluation {
+export interface InitialEvaluation {
   result: EvaluationResult
   conditions: AllowedConditionExpression
 }
@@ -836,7 +836,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
    * @param request the service authorization request containing all analyses
    * @returns 'Allowed' if the core policies allow the request, otherwise may return 'ImplicitlyDenied' or 'ExplicitlyDenied' depending on the analyses
    */
-  private initialEvaluationResult(request: ServiceAuthorizationRequest): InitialEvaluation {
+  protected initialEvaluationResult(request: ServiceAuthorizationRequest): InitialEvaluation {
     const sessionResult = request.sessionAnalysis?.result
     const identityStatementResult = request.identityAnalysis.result
     const resourcePolicyResult = request.resourceAnalysis?.result
