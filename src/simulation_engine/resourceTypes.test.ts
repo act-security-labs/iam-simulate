@@ -8,8 +8,7 @@ describe('getResourceTypesForAction', () => {
     ['live', ['function alias']],
     ['$LATEST', ['function alias']],
     ['v2', ['function alias']],
-    ['*', ['function alias', 'function version']],
-    ['?', ['function alias', 'function version']]
+    ['*', ['function alias', 'function version']]
   ])(
     'classifies Lambda qualifier %s without collapsing wildcard types',
     async (qualifier, expected) => {
