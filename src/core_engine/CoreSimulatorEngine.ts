@@ -1,5 +1,5 @@
 import { type Policy, type Statement } from '@actsecurity/iam-policy'
-import { isServicePrincipal } from '@actsecurity/iam-utils'
+import { isCloudFrontOriginAccessUserArn, isServicePrincipal } from '@actsecurity/iam-utils'
 import { requestMatchesStatementActions } from '../action/action.js'
 import { type ConditionMatchResult, requestMatchesConditions } from '../condition/condition.js'
 import { allowStatementExpression, always, and, never, or } from '../analysis/allowedConditions.js'
@@ -152,6 +152,16 @@ const serviceEngines: Record<string, new () => ServiceAuthorizer> = {
  * @returns the result of the authorization
  */
 export function authorize(request: AuthorizationRequest): RequestAnalysis {
+  // OAIs are modeled only for the validated S3 actions, never for other services.
+  const principal = request.request.principal
+  if (
+    principal.isAuthenticated() &&
+    isCloudFrontOriginAccessUserArn(principal.value()) &&
+    request.request.action.service() !== 's3'
+  ) {
+    return { result: 'ImplicitlyDenied', sameAccount: false }
+  }
+
   const principalHasPermissionBoundary =
     !!request.permissionBoundaries && request.permissionBoundaries.length > 0
   const simulationParameters = request.simulationParameters
@@ -265,7 +275,7 @@ export function getServiceAuthorizer(request: AuthorizationRequest): ServiceAuth
  * @param request the request to analyze against
  * @param simulationParameters the parameters that affect policy evaluation
  * @param policyType the policy type whose statements are being analyzed
- * @returns the identity-policy analysis, or NotApplicable for a service principal's identity layer.
+ * @returns the identity-policy analysis, or NotApplicable for a service principal or OAI identity layer.
  * Session, permission-boundary, and endpoint analyses remain applicable when this function is called
  * with their respective policy types.
  */
@@ -278,7 +288,8 @@ export function analyzeIdentityPolicies(
   if (
     policyType === 'identity' &&
     request.principal.isAuthenticated() &&
-    isServicePrincipal(request.principal.value())
+    (isServicePrincipal(request.principal.value()) ||
+      isCloudFrontOriginAccessUserArn(request.principal.value()))
   ) {
     return {
       result: 'NotApplicable',

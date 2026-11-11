@@ -85,6 +85,12 @@ const simulation: Simulation = {
 const response = await runSimulation(simulation, {})
 ```
 
+### CloudFront origin access identities
+
+Legacy CloudFront origin access identities (OAIs) use a policy principal ARN such as `arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123`. This ARN does not encode the OAI's owning account. `CanonicalUser` policy elements match a canonical user ID supplied directly as the request principal; the simulator does not infer an alias from an OAI ARN.
+
+OAI access is resource-policy driven; no IAM identity policy is required. As a deliberate product constraint, modeled access is limited to the following 17 S3 actions validated in live tests: `GetObject`, `PutObject`, `DeleteObject`, `GetObjectAcl`, `GetObjectAttributes`, `GetObjectTagging`, `DeleteObjectTagging`, `AbortMultipartUpload`, `ListBucket`, `GetBucketAcl`, `GetBucketLocation`, `GetBucketVersioning`, `GetBucketPolicyStatus`, `GetEncryptionConfiguration`, `GetBucketPublicAccessBlock`, `ListBucketVersions`, and `ListBucketMultipartUploads` (all prefixed by `s3:`). This is not an exhaustive statement of AWS capability. Other actions are denied; explicit policy denies and supplied guardrails still apply. ACL-only grants are not modeled. OAIs are distinct from CloudFront origin access control service principals.
+
 ### S3 Block Public Access
 
 For S3 requests, callers can provide the effective `RestrictPublicBuckets` setting with `additionalSettings.s3.blockPublicAccess`. iam-simulate does not fetch or determine this setting; provide `true` only when S3 Block Public Access should apply for the bucket/account being simulated.

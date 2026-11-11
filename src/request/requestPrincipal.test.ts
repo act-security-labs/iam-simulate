@@ -31,6 +31,18 @@ describe('requestPrincipalFromInput', () => {
     expect(principal.value()).toEqual(principalInput)
   })
 
+  it('does not treat the CloudFront OAI policy ARN as an account identifier', () => {
+    //Given an OAI policy principal whose ARN does not encode its owner account
+    const principalInput = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+
+    //When the request principal is created
+    const principal = requestPrincipalFromInput(principalInput)
+
+    //Then the owner is unknown and the original policy principal remains available
+    expect(principal.accountId()).toBeUndefined()
+    expect(principal.value()).toEqual(principalInput)
+  })
+
   it('returns undefined account id for non-ARN string values', () => {
     //Given a non-ARN principal input
     const principalInput = 'not-an-arn'

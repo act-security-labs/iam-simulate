@@ -3,6 +3,7 @@ import { type Principal, type Statement } from '@actsecurity/iam-policy'
 import {
   convertAssumedRoleArnToRoleArn,
   isAssumedRoleArn,
+  isCloudFrontOriginAccessUserArn,
   isFederatedUserArn,
   isIamRoleArn,
   splitArnParts
@@ -144,7 +145,8 @@ export function requestMatchesNotPrincipal(
       analysis.explain.matches === 'Match' ||
       analysis.explain.matches === 'AccountLevelMatch' ||
       analysis.explain.matches === 'SessionRoleMatch' ||
-      analysis.explain.matches === 'SessionUserMatch'
+      analysis.explain.matches === 'SessionUserMatch' ||
+      oaiMatchesCloudFrontNotPrincipal(request, principalStatement)
     ) {
       analysis.explain.matches = 'NoMatch'
     } else {
@@ -164,6 +166,23 @@ export function requestMatchesNotPrincipal(
     matches: 'Match',
     explains: analyses.map((a) => a.explain)
   }
+}
+
+/**
+ * An OAI is excluded by a CloudFront service entry in a NotPrincipal element.
+ *
+ * @param request the request being evaluated
+ * @param principal the NotPrincipal entry
+ * @returns whether the entry excludes the OAI
+ */
+function oaiMatchesCloudFrontNotPrincipal(request: AwsRequest, principal: Principal): boolean {
+  const requestPrincipal = request.principal
+  return (
+    requestPrincipal.isAuthenticated() &&
+    isCloudFrontOriginAccessUserArn(requestPrincipal.value()) &&
+    principal.isServicePrincipal() &&
+    principal.service() === 'cloudfront.amazonaws.com'
+  )
 }
 
 /**

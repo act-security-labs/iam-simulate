@@ -1,8 +1,29 @@
-import { isServicePrincipal } from '@actsecurity/iam-utils'
+import { isCloudFrontOriginAccessUserArn, isServicePrincipal } from '@actsecurity/iam-utils'
 import { type RequestAnalysis } from '../../evaluate.js'
 import { DefaultServiceAuthorizer } from '../DefaultServiceAuthorizer.js'
 import { type ServiceAuthorizationRequest } from '../ServiceAuthorizer.js'
 import { classifyS3RuntimePublicBucketPolicy } from './s3BlockPublicAccess.js'
+
+// Deliberate product cap: these are the S3 actions validated with live OAI requests.
+const oaiAllowedActions = new Set([
+  'getobject',
+  'putobject',
+  'deleteobject',
+  'getobjectacl',
+  'getobjectattributes',
+  'getobjecttagging',
+  'deleteobjecttagging',
+  'abortmultipartupload',
+  'listbucket',
+  'getbucketacl',
+  'getbucketlocation',
+  'getbucketversioning',
+  'getbucketpolicystatus',
+  'getencryptionconfiguration',
+  'getbucketpublicaccessblock',
+  'listbucketversions',
+  'listbucketmultipartuploads'
+])
 
 /**
  * Service authorizer for S3 requests that applies S3 Block Public Access runtime behavior.
@@ -20,6 +41,15 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
 
     if (baseResult.result !== 'Allowed') {
       return baseResult
+    }
+
+    const principal = request.request.principal
+    if (
+      principal.isAuthenticated() &&
+      isCloudFrontOriginAccessUserArn(principal.value()) &&
+      !oaiAllowedActions.has(request.request.action.action().toLowerCase())
+    ) {
+      return { ...baseResult, result: 'ImplicitlyDenied', conditions: undefined }
     }
 
     if (!isStandardS3BucketResource(request.request.resource.value())) {
@@ -43,7 +73,6 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
       return baseResult
     }
 
-    const principal = request.request.principal
     if (principal.isAuthenticated() && isServicePrincipal(principal.value())) {
       return baseResult
     }

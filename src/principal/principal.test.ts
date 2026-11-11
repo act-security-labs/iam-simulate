@@ -1125,6 +1125,67 @@ describe('requestMatchesPrincipal', () => {
 })
 
 describe('requestMatchesNotPrincipal', () => {
+  it.each([
+    {
+      requestPrincipal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      service: 'cloudfront.amazonaws.com',
+      expected: 'NoMatch'
+    },
+    {
+      requestPrincipal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      service: 'lambda.amazonaws.com',
+      expected: 'Match'
+    },
+    {
+      requestPrincipal: 'arn:aws:iam::123456789012:user/Alice',
+      service: 'cloudfront.amazonaws.com',
+      expected: 'Match'
+    }
+  ] as const)(
+    'only excludes OAIs for the CloudFront service entry',
+    ({ requestPrincipal, service, expected }) => {
+      //Given a NotPrincipal service entry and a request principal
+      const policy = loadPolicy({ Statement: [{ NotPrincipal: { Service: service } }] })
+      const entries = (policy.statements()[0] as NotPrincipalStatement).notPrincipals()
+      const request = new AwsRequestImpl(
+        requestPrincipal,
+        defaultResource,
+        's3:GetObject',
+        new RequestContextImpl({})
+      )
+
+      //When the NotPrincipal element is evaluated
+      const results = (['Allow', 'Deny'] as const).map((effect) =>
+        requestMatchesNotPrincipal(request, entries, defaultSimulationParameters, effect)
+      )
+
+      //Then only the specified CloudFront OAI case is excluded for either effect
+      expect(results.map((result) => result.matches)).toEqual([expected, expected])
+    }
+  )
+
+  it('excludes an OAI when CloudFront appears among multiple NotPrincipal entries', () => {
+    //Given a NotPrincipal list containing the CloudFront service and another service
+    const policy = loadPolicy({
+      Statement: [
+        { NotPrincipal: { Service: ['lambda.amazonaws.com', 'cloudfront.amazonaws.com'] } }
+      ]
+    })
+    const entries = (policy.statements()[0] as NotPrincipalStatement).notPrincipals()
+    const request = new AwsRequestImpl(
+      'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      defaultResource,
+      's3:GetObject',
+      new RequestContextImpl({})
+    )
+
+    //When the NotPrincipal element is evaluated
+    const result = requestMatchesNotPrincipal(request, entries, defaultSimulationParameters, 'Deny')
+
+    //Then the CloudFront entry excludes the OAI
+    expect(result.matches).toBe('NoMatch')
+  })
+
   it('returns NoMatch for a matching principal', () => {
     //Given a policy with a matching principal
     const policy = loadPolicy({

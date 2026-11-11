@@ -13,8 +13,7 @@ import {
   isAssumedRoleArn,
   isFederatedUserArn,
   isIamRoleArn,
-  isIamUserArn,
-  isServicePrincipal
+  isIamUserArn
 } from '@actsecurity/iam-utils'
 import {
   type AllowedConditionExpression,
@@ -446,7 +445,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
     }
     assertAuthenticatedRequestPrincipal(principal)
 
-    if (isServicePrincipal(principal.value())) {
+    if (request.identityAnalysis.result === 'NotApplicable') {
       return resourceAllowStatementsExpression(request.resourceAnalysis.allowStatements)
     }
 
@@ -859,9 +858,8 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
       }
     }
 
-    // Service Principals
-    if (isServicePrincipal(requestPrincipal.value())) {
-      // Service principals are allowed if the resource policy allows them
+    // Principals without an identity-policy layer rely on the resource policy.
+    if (identityStatementResult === 'NotApplicable') {
       if (resourcePolicyResult === 'Allowed') {
         return {
           result: 'Allowed',

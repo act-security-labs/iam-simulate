@@ -333,6 +333,247 @@ describe('isStandardS3BucketResource', () => {
 })
 
 describe('S3ServiceAuthorizer', () => {
+  it('allows an OAI using only a matching bucket policy', () => {
+    //Given an OAI and a matching resource policy without identity policies
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI resource policy',
+      principal,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:GetObject', Resource: '*' }
+        ]
+      },
+      expected: { result: 'Allowed' }
+    })
+
+    //When the request is authorized
+    const analysis = authorize(request)
+
+    //Then the OAI uses its resource policy, not a fabricated identity policy
+    expect(analysis.result).toBe('Allowed')
+    expect(analysis.identityAnalysis.result).toBe('NotApplicable')
+  })
+
+  it.each([
+    'GetObject',
+    'PutObject',
+    'DeleteObject',
+    'GetObjectAcl',
+    'GetObjectAttributes',
+    'GetObjectTagging',
+    'DeleteObjectTagging',
+    'AbortMultipartUpload',
+    'ListBucket',
+    'GetBucketAcl',
+    'GetBucketLocation',
+    'GetBucketVersioning',
+    'GetBucketPolicyStatus',
+    'GetEncryptionConfiguration',
+    'GetBucketPublicAccessBlock',
+    'ListBucketVersions',
+    'ListBucketMultipartUploads'
+  ])('allows a resource-policy grant for validated OAI action s3:%s', (action) => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: action,
+      principal,
+      action: `s3:${action}`,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:*', Resource: '*' }
+        ]
+      },
+      expected: { result: 'Allowed' }
+    })
+    expect(authorize(request).result).toBe('Allowed')
+  })
+
+  it('does not apply a CloudFront service NotPrincipal deny to an OAI', () => {
+    //Given a separate OAI grant and a deny excluding the CloudFront service principal
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI and CloudFront NotPrincipal',
+      principal,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:GetObject', Resource: '*' },
+          {
+            Effect: 'Deny',
+            NotPrincipal: { Service: 'cloudfront.amazonaws.com' },
+            Action: 's3:GetObject',
+            Resource: '*'
+          }
+        ]
+      },
+      expected: { result: 'Allowed' }
+    })
+
+    //When the request is authorized
+    const result = authorize(request)
+
+    //Then the NotPrincipal deny does not apply
+    expect(result.result).toBe('Allowed')
+    expect(result.resourceAnalysis?.unmatchedStatements[0]?.principalMatch).toBe('NoMatch')
+  })
+
+  it('does not treat an OAI as the CloudFront service principal in an Allow', () => {
+    const request = authorizationRequest({
+      name: 'OAI is not OAC',
+      principal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { Service: 'cloudfront.amazonaws.com' },
+            Action: 's3:GetObject',
+            Resource: '*'
+          }
+        ]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request).result).toBe('ImplicitlyDenied')
+  })
+
+  it('preserves an unknown OAI context value as a Discovery condition', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI discovery context',
+      principal,
+      context: { 'aws:PrincipalType': 'placeholder' },
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { AWS: principal },
+            Action: 's3:GetObject',
+            Resource: '*',
+            Condition: { StringEquals: { 'aws:PrincipalType': 'User' } }
+          }
+        ]
+      },
+      expected: { result: 'Allowed' }
+    })
+    request.simulationParameters = {
+      simulationMode: 'Discovery',
+      discoveryContextKeyConstraints: new DiscoveryContextKeyConstraints([
+        { keyName: 'aws:PrincipalType', presenceIsKnown: true, valueIsKnown: false }
+      ])
+    }
+    const result = authorize(request)
+    expect(result.result).toBe('Allowed')
+    expect(result.conditions).toMatchObject({
+      conditionType: 'condition',
+      key: 'aws:PrincipalType',
+      values: ['User']
+    })
+  })
+
+  it('caps unvalidated OAI actions even if policies allow them', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'outside product cap',
+      principal,
+      action: 's3:PutBucketPolicy',
+      identityPolicies: [allowIdentityPolicy('s3:*', '*')],
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [{ Effect: 'Allow', Principal: '*', Action: 's3:*', Resource: '*' }]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request).result).toBe('ImplicitlyDenied')
+  })
+
+  it('preserves a matching explicit deny even outside the OAI action cap', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'explicit deny',
+      principal,
+      action: 's3:PutBucketPolicy',
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [{ Effect: 'Deny', Principal: '*', Action: 's3:*', Resource: '*' }]
+      },
+      expected: { result: 'ExplicitlyDenied' }
+    })
+    expect(authorize(request).result).toBe('ExplicitlyDenied')
+  })
+
+  it('does not allow an OAI to use a non-S3 action, even with supplied identity policies', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI outside S3',
+      principal,
+      action: 'sqs:SendMessage',
+      resource: 'arn:aws:sqs:us-east-1:111111111111:queue',
+      identityPolicies: [allowIdentityPolicy('*', '*')],
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [{ Effect: 'Allow', Principal: { AWS: principal }, Action: '*', Resource: '*' }]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request)).toEqual({ result: 'ImplicitlyDenied', sameAccount: false })
+  })
+
+  it('rejects a non-S3 OAI request before evaluating an explicit policy deny', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI outside S3 with explicit deny',
+      principal,
+      action: 'sqs:SendMessage',
+      resource: 'arn:aws:sqs:us-east-1:111111111111:queue',
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [{ Effect: 'Deny', Principal: '*', Action: '*', Resource: '*' }]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request)).toEqual({ result: 'ImplicitlyDenied', sameAccount: false })
+  })
+
+  it('still applies a supplied resource control policy deny to OAI access', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI with resource guardrail',
+      principal,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:GetObject', Resource: '*' }
+        ]
+      },
+      expected: { result: 'ExplicitlyDenied' }
+    })
+    request.resourceControlPolicies = [
+      {
+        orgIdentifier: 'ou-example',
+        policies: [
+          loadPolicy(
+            {
+              Version: '2012-10-17',
+              Statement: [
+                { Effect: 'Allow', Principal: '*', Action: '*', Resource: '*' },
+                { Effect: 'Deny', Principal: '*', Action: 's3:GetObject', Resource: '*' }
+              ]
+            },
+            { name: 'rcp' }
+          )
+        ]
+      }
+    ]
+    const analysis = authorize(request)
+    expect(analysis.result).toBe('ExplicitlyDenied')
+    expect(analysis.blockedBy).toContain('rcp')
+  })
+
   it.each(s3BpaRuntimeCases)('$name', (testCase) => {
     //Given an S3 authorization request
     const request = authorizationRequest(testCase)

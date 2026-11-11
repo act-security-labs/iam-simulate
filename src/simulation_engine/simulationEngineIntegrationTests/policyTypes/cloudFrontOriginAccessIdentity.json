@@ -1,0 +1,339 @@
+[
+  {
+    "name": "OAI discovery preserves the escape condition for an unknown conditional deny",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": { "aws:PrincipalType": "unknown" }
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+          },
+          {
+            "Sid": "ConditionalDeny",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*",
+            "Condition": { "StringEquals": { "aws:PrincipalType": "User" } }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        { "keyName": "aws:PrincipalType", "presenceIsKnown": true, "valueIsKnown": false }
+      ]
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringNotEquals",
+            "key": "aws:PrincipalType",
+            "values": ["User"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Deny",
+                "statementId": "ConditionalDeny",
+                "statementIndex": 2
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "OAI discovery retains an unknown principal type as a condition",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": { "aws:PrincipalType": "unknown" }
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "PrincipalType",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*",
+            "Condition": { "StringEquals": { "aws:PrincipalType": "User" } }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        { "keyName": "aws:PrincipalType", "presenceIsKnown": true, "valueIsKnown": false }
+      ]
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:PrincipalType",
+            "values": ["User"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Allow",
+                "statementId": "PrincipalType",
+                "statementIndex": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "OAI wildcard simulation finds the bucket policy resource pattern",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": { "resource": "arn:aws:s3:::example-bucket/*", "accountId": "222222222222" },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/public/*"
+          }
+        ]
+      }
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::example-bucket/public/*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "OAI can access an object through an explicit bucket policy grant",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+          }
+        ]
+      }
+    },
+    "expected": { "resultType": "single", "overallResult": "Allowed", "results": [] }
+  },
+  {
+    "name": "OAI cannot access an object with no bucket policy",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": []
+    },
+    "expected": { "resultType": "single", "overallResult": "ImplicitlyDenied", "results": [] }
+  },
+  {
+    "name": "OAI action cap rejects an S3 action even with a wildcard grant",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:PutBucketPolicy",
+        "resource": { "resource": "arn:aws:s3:::example-bucket", "accountId": "222222222222" },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": "arn:aws:s3:::example-bucket"
+          }
+        ]
+      }
+    },
+    "expected": { "resultType": "single", "overallResult": "ImplicitlyDenied", "results": [] }
+  },
+  {
+    "name": "OAI explicit deny takes precedence over a resource-policy allow",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+          },
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+          }
+        ]
+      }
+    },
+    "expected": { "resultType": "single", "overallResult": "ExplicitlyDenied", "results": [] }
+  },
+  {
+    "name": "OAI is excluded by CloudFront service NotPrincipal",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123"
+            },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+          },
+          {
+            "Effect": "Deny",
+            "NotPrincipal": { "Service": "cloudfront.amazonaws.com" },
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::example-bucket/*"
+          }
+        ]
+      }
+    },
+    "expected": { "resultType": "single", "overallResult": "Allowed", "results": [] }
+  },
+  {
+    "name": "OAI is rejected for non-S3 requests before policy evaluation",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "sqs:SendMessage",
+        "resource": {
+          "resource": "arn:aws:sqs:us-east-1:222222222222:example",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "sqs:SendMessage",
+            "Resource": "arn:aws:sqs:us-east-1:222222222222:example"
+          }
+        ]
+      }
+    },
+    "expected": { "resultType": "single", "overallResult": "ImplicitlyDenied", "results": [] }
+  }
+]

@@ -1,3 +1,4 @@
+import { isCloudFrontOriginAccessUserArn } from '@actsecurity/iam-utils'
 import {
   isAnonymousRequestPrincipal,
   isSimulationRequestPrincipal,
@@ -122,6 +123,9 @@ export class AuthenticatedRequestPrincipalImpl implements AuthenticatedRequestPr
   }
 
   accountId(): string | undefined {
+    if (isCloudFrontOriginAccessUserArn(this.value())) {
+      return undefined
+    }
     const arnParts = this.value().split(':')
     if (arnParts.length < 6 || arnParts[0] !== 'arn') {
       return undefined
