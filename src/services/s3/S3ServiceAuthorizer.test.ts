@@ -391,6 +391,68 @@ describe('S3ServiceAuthorizer', () => {
     expect(authorize(request).result).toBe('Allowed')
   })
 
+  it.each([
+    { alias: 'canonical-id', result: 'Allowed' },
+    { alias: 'different-id', result: 'ImplicitlyDenied' },
+    { alias: undefined, result: 'ImplicitlyDenied' }
+  ] as const)(
+    'matches only an explicitly supplied canonical alias ($result)',
+    ({ alias, result }) => {
+      const arn = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+      const principal = alias
+        ? { type: 'CloudFrontOriginAccessIdentity' as const, arn, canonicalUserId: alias }
+        : { type: 'CloudFrontOriginAccessIdentity' as const, arn }
+      const request = authorizationRequest({
+        name: 'canonical OAI policy',
+        principal,
+        resourcePolicy: {
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              Principal: { CanonicalUser: 'canonical-id' },
+              Action: 's3:GetObject',
+              Resource: '*'
+            }
+          ]
+        },
+        expected: { result }
+      })
+      expect(authorize(request).result).toBe(result)
+    }
+  )
+
+  it.each([
+    { alias: 'canonical-id', result: 'ImplicitlyDenied' },
+    { alias: 'different-id', result: 'Allowed' }
+  ] as const)(
+    'uses the canonical alias for NotPrincipal matching ($result)',
+    ({ alias, result }) => {
+      const principal = {
+        type: 'CloudFrontOriginAccessIdentity' as const,
+        arn: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+        canonicalUserId: alias
+      }
+      const request = authorizationRequest({
+        name: 'canonical NotPrincipal',
+        principal,
+        resourcePolicy: {
+          Version: '2012-10-17',
+          Statement: [
+            {
+              Effect: 'Allow',
+              NotPrincipal: { CanonicalUser: 'canonical-id' },
+              Action: 's3:GetObject',
+              Resource: '*'
+            }
+          ]
+        },
+        expected: { result }
+      })
+      expect(authorize(request).result).toBe(result)
+    }
+  )
+
   it('caps unvalidated OAI actions even if policies allow them', () => {
     const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
     const request = authorizationRequest({
