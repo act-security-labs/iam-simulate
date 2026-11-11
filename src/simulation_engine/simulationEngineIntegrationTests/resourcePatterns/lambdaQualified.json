@@ -1,0 +1,1053 @@
+[
+  {
+    "name": "Get: 1 with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get: 1 with owner other",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "other"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get: 1 with owner absent",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get: live with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get: live with owner other",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "other"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Get: live with owner absent",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Put: 1 with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:PutProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:PutProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Put: 1 with owner other",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:PutProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:PutProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "other"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Put: 1 with owner absent",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:PutProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:PutProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Put: live with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:PutProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:PutProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Put: live with owner other",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:PutProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:PutProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "other"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Put: live with owner absent",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:PutProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:PutProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Delete: 1 with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:DeleteProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:DeleteProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Delete: 1 with owner other",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:DeleteProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:DeleteProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "other"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Delete: 1 with owner absent",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:DeleteProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:DeleteProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function version"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Delete: live with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:DeleteProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:DeleteProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Delete: live with owner other",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:DeleteProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:DeleteProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "other"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "Delete: live with owner absent",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:DeleteProvisionedConcurrencyConfig",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:DeleteProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:live",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "function alias"
+        }
+      ]
+    }
+  },
+  {
+    "name": "* qualifier evaluates both types",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "read",
+          "policy": {
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function alias",
+          "resourcePattern": "*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "function version",
+          "resourcePattern": "*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "? qualifier evaluates both types",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "read",
+          "policy": {
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:GetProvisionedConcurrencyConfig",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:GetProvisionedConcurrencyConfig",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:?",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function alias",
+          "resourcePattern": "*",
+          "result": "Allowed"
+        },
+        {
+          "resourceType": "function version",
+          "resourcePattern": "*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "question mark wildcard is supported for S3",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "read",
+          "policy": {
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::bucket-?/file",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "*",
+          "result": "Allowed"
+        }
+      ]
+    }
+  }
+]

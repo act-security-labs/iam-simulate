@@ -41,6 +41,8 @@ import {
 } from './simulation.js'
 import { type SimulationOptions } from './simulationOptions.js'
 
+const resourceWildcardPattern = /[*?]/
+
 const DEFAULT_RCP = {
   arn: 'arn:aws:organizations::aws:policy/resource_control_policy/p-RCPFullAWSAccess',
   policy: {
@@ -239,7 +241,7 @@ export async function runSimulation(
 ): Promise<RunSimulationResults> {
   const principal = simulation.request.principal
   const resourceArn = simulation.request.resource.resource
-  const resourceHasWildcard = resourceArn.includes('*')
+  const resourceHasWildcard = resourceWildcardPattern.test(resourceArn)
 
   if (!isSimulationRequestPrincipal(principal)) {
     return {

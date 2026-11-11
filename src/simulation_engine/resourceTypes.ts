@@ -1,6 +1,10 @@
 import { iamActionDetails, iamResourceTypeDetails, type ResourceType } from '@actsecurity/iam-data'
 import { mostSpecificMatchingResourceTypePatterns } from '@actsecurity/iam-utils'
 
+const resourceWildcardPattern = /[*?]/
+const qualifiedLambdaFunctionArnPattern = /^arn:[^:]+:lambda:[^:]+:[^:]+:function:[^:]+:([^:]+)$/i
+const numericQualifierPattern = /^\d+$/
+
 /**
  * Get the the possible resource types for an action and resource
  *
@@ -29,5 +33,43 @@ export async function getResourceTypesForAction(
     actionResourceTypes.map((resourceType) => resourceType.arn)
   )
 
-  return actionResourceTypes.filter((resourceType) => matchingPatterns.includes(resourceType.arn))
+  const matchingTypes = actionResourceTypes.filter((resourceType) =>
+    matchingPatterns.includes(resourceType.arn)
+  )
+  return disambiguateLambdaQualifier(service, resource, matchingTypes)
+}
+
+/**
+ * Select the Lambda version or alias for a concrete qualified function ARN.
+ * Patterns retain all matching types so each can be evaluated independently.
+ *
+ * @param service IAM service name
+ * @param resource requested resource ARN or pattern
+ * @param matchingTypes resource types matched by the action and ARN
+ * @returns the matching types, narrowed only for a concrete Lambda qualifier
+ */
+function disambiguateLambdaQualifier(
+  service: string,
+  resource: string,
+  matchingTypes: ResourceType[]
+): ResourceType[] {
+  if (
+    matchingTypes.length !== 2 ||
+    service.toLowerCase() !== 'lambda' ||
+    resourceWildcardPattern.test(resource)
+  ) {
+    return matchingTypes
+  }
+  const match = qualifiedLambdaFunctionArnPattern.exec(resource)
+  if (
+    !match ||
+    !matchingTypes.some((type) => type.key === 'function alias') ||
+    !matchingTypes.some((type) => type.key === 'function version')
+  ) {
+    return matchingTypes
+  }
+  const selected = numericQualifierPattern.test(match[1]) ? 'function version' : 'function alias'
+  return matchingTypes.filter((type) =>
+    type.key !== 'function alias' && type.key !== 'function version' ? true : type.key === selected
+  )
 }

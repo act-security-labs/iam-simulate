@@ -2,6 +2,41 @@ import { describe, expect, it } from 'vitest'
 import { getResourceTypesForAction } from './resourceTypes.js'
 
 describe('getResourceTypesForAction', () => {
+  it.each([
+    ['1', ['function version']],
+    ['0123', ['function version']],
+    ['live', ['function alias']],
+    ['$LATEST', ['function alias']],
+    ['v2', ['function alias']],
+    ['*', ['function alias', 'function version']],
+    ['?', ['function alias', 'function version']]
+  ])(
+    'classifies Lambda qualifier %s without collapsing wildcard types',
+    async (qualifier, expected) => {
+      //Given an action whose resource types include Lambda aliases and versions
+      const arn = `arn:aws:lambda:us-east-1:123456789012:function:example:${qualifier}`
+      //When resolving the matching resource types
+      const result = await getResourceTypesForAction(
+        'lambda',
+        'GetProvisionedConcurrencyConfig',
+        arn
+      )
+      //Then concrete qualifiers select the appropriate type and patterns retain both
+      expect(new Set(result.map((type) => type.key))).toEqual(new Set(expected))
+    }
+  )
+
+  it('keeps both Lambda types when the function name is wildcarded even with a numeric qualifier', async () => {
+    //Given a wildcard function name with a numeric-looking qualifier
+    const arn = 'arn:aws:lambda:us-east-1:123456789012:function:exam*:1'
+    //When resolving matching action resource types
+    const result = await getResourceTypesForAction('lambda', 'GetProvisionedConcurrencyConfig', arn)
+    //Then the wildcard request retains both matching types
+    expect(new Set(result.map((type) => type.key))).toEqual(
+      new Set(['function alias', 'function version'])
+    )
+  })
+
   it('matches a regionless Bedrock foundation model for a supported action', async () => {
     //Given a global Bedrock foundation model ARN
     const resource = 'arn:aws:bedrock:::foundation-model/example.model-v1:0'
