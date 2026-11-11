@@ -220,6 +220,18 @@ export function authorize(request: AuthorizationRequest): RequestAnalysis {
     serviceSettings: request.serviceSettings
   })
 
+  // OAIs are modeled only for the validated S3 actions, never for other services.
+  const principal = request.request.principal
+  if (
+    result.result === 'Allowed' &&
+    principal.isAuthenticated() &&
+    isCloudFrontOriginAccessUserArn(principal.value()) &&
+    request.request.action.service() !== 's3'
+  ) {
+    result.result = 'ImplicitlyDenied'
+    result.conditions = undefined
+  }
+
   if (simulationParameters.simulationMode === 'Discovery') {
     result.ignoredConditions = ignoredConditionsAnalysis(
       sessionAnalysis,
@@ -265,7 +277,7 @@ export function getServiceAuthorizer(request: AuthorizationRequest): ServiceAuth
  * @param request the request to analyze against
  * @param simulationParameters the parameters that affect policy evaluation
  * @param policyType the policy type whose statements are being analyzed
- * @returns the identity-policy analysis, or NotApplicable for a service principal or S3 OAI identity layer.
+ * @returns the identity-policy analysis, or NotApplicable for a service principal or OAI identity layer.
  * Session, permission-boundary, and endpoint analyses remain applicable when this function is called
  * with their respective policy types.
  */
@@ -279,8 +291,7 @@ export function analyzeIdentityPolicies(
     policyType === 'identity' &&
     request.principal.isAuthenticated() &&
     (isServicePrincipal(request.principal.value()) ||
-      (request.action.service() === 's3' &&
-        isCloudFrontOriginAccessUserArn(request.principal.value())))
+      isCloudFrontOriginAccessUserArn(request.principal.value()))
   ) {
     return {
       result: 'NotApplicable',

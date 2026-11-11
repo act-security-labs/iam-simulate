@@ -422,6 +422,23 @@ describe('S3ServiceAuthorizer', () => {
     expect(authorize(request).result).toBe('ExplicitlyDenied')
   })
 
+  it('does not allow an OAI to use a non-S3 action, even with supplied identity policies', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI outside S3',
+      principal,
+      action: 'sqs:SendMessage',
+      resource: 'arn:aws:sqs:us-east-1:111111111111:queue',
+      identityPolicies: [allowIdentityPolicy('*', '*')],
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [{ Effect: 'Allow', Principal: { AWS: principal }, Action: '*', Resource: '*' }]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request).result).toBe('ImplicitlyDenied')
+  })
+
   it('still applies a supplied resource control policy deny to OAI access', () => {
     const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
     const request = authorizationRequest({
