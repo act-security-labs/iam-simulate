@@ -391,73 +391,11 @@ describe('S3ServiceAuthorizer', () => {
     expect(authorize(request).result).toBe('Allowed')
   })
 
-  it.each([
-    { alias: 'canonical-id', result: 'Allowed' },
-    { alias: 'different-id', result: 'ImplicitlyDenied' },
-    { alias: undefined, result: 'ImplicitlyDenied' }
-  ] as const)(
-    'matches only an explicitly supplied canonical alias ($result)',
-    ({ alias, result }) => {
-      const arn = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
-      const principal = alias
-        ? { type: 'CloudFrontOriginAccessIdentity' as const, arn, canonicalUserId: alias }
-        : { type: 'CloudFrontOriginAccessIdentity' as const, arn }
-      const request = authorizationRequest({
-        name: 'canonical OAI policy',
-        principal,
-        resourcePolicy: {
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Effect: 'Allow',
-              Principal: { CanonicalUser: 'canonical-id' },
-              Action: 's3:GetObject',
-              Resource: '*'
-            }
-          ]
-        },
-        expected: { result }
-      })
-      expect(authorize(request).result).toBe(result)
-    }
-  )
-
-  it.each([
-    { alias: 'canonical-id', result: 'ImplicitlyDenied' },
-    { alias: 'different-id', result: 'Allowed' }
-  ] as const)(
-    'uses the canonical alias for NotPrincipal matching ($result)',
-    ({ alias, result }) => {
-      const principal = {
-        type: 'CloudFrontOriginAccessIdentity' as const,
-        arn: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
-        canonicalUserId: alias
-      }
-      const request = authorizationRequest({
-        name: 'canonical NotPrincipal',
-        principal,
-        resourcePolicy: {
-          Version: '2012-10-17',
-          Statement: [
-            {
-              Effect: 'Allow',
-              NotPrincipal: { CanonicalUser: 'canonical-id' },
-              Action: 's3:GetObject',
-              Resource: '*'
-            }
-          ]
-        },
-        expected: { result }
-      })
-      expect(authorize(request).result).toBe(result)
-    }
-  )
-
-  it('does not apply a Deny NotPrincipal CloudFront service statement to an OAI', () => {
-    // Live S3 probes observed OAI requests allowed despite this NotPrincipal service deny.
+  it('does not apply a CloudFront service NotPrincipal deny to an OAI', () => {
+    //Given a separate OAI grant and a deny excluding the CloudFront service principal
     const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
     const request = authorizationRequest({
-      name: 'OAI and CloudFront service NotPrincipal',
+      name: 'OAI and CloudFront NotPrincipal',
       principal,
       resourcePolicy: {
         Version: '2012-10-17',
@@ -473,29 +411,13 @@ describe('S3ServiceAuthorizer', () => {
       },
       expected: { result: 'Allowed' }
     })
-    expect(authorize(request).result).toBe('Allowed')
-  })
 
-  it('does not extend the observed NotPrincipal exception to other services', () => {
-    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
-    const request = authorizationRequest({
-      name: 'unverified service exception',
-      principal,
-      resourcePolicy: {
-        Version: '2012-10-17',
-        Statement: [
-          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:GetObject', Resource: '*' },
-          {
-            Effect: 'Deny',
-            NotPrincipal: { Service: 'lambda.amazonaws.com' },
-            Action: 's3:GetObject',
-            Resource: '*'
-          }
-        ]
-      },
-      expected: { result: 'ExplicitlyDenied' }
-    })
-    expect(authorize(request).result).toBe('ExplicitlyDenied')
+    //When the request is authorized
+    const result = authorize(request)
+
+    //Then the NotPrincipal deny does not apply
+    expect(result.result).toBe('Allowed')
+    expect(result.resourceAnalysis?.unmatchedStatements[0]?.principalMatch).toBe('NoMatch')
   })
 
   it('does not treat an OAI as the CloudFront service principal in an Allow', () => {
@@ -598,7 +520,23 @@ describe('S3ServiceAuthorizer', () => {
       },
       expected: { result: 'ImplicitlyDenied' }
     })
-    expect(authorize(request).result).toBe('ImplicitlyDenied')
+    expect(authorize(request)).toEqual({ result: 'ImplicitlyDenied', sameAccount: false })
+  })
+
+  it('rejects a non-S3 OAI request before evaluating an explicit policy deny', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI outside S3 with explicit deny',
+      principal,
+      action: 'sqs:SendMessage',
+      resource: 'arn:aws:sqs:us-east-1:111111111111:queue',
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [{ Effect: 'Deny', Principal: '*', Action: '*', Resource: '*' }]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request)).toEqual({ result: 'ImplicitlyDenied', sameAccount: false })
   })
 
   it('still applies a supplied resource control policy deny to OAI access', () => {

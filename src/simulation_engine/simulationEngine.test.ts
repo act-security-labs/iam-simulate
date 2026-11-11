@@ -1814,42 +1814,6 @@ describe('runSimulation', () => {
     })
   })
 
-  it('accepts an OAI canonical alias through the public simulation API', async () => {
-    const canonicalUserId = 'a'.repeat(64)
-    const simulation: Simulation = {
-      identityPolicies: [],
-      serviceControlPolicies: [],
-      resourceControlPolicies: [],
-      resourcePolicy: {
-        Version: '2012-10-17',
-        Statement: [
-          {
-            Effect: 'Allow',
-            Principal: { CanonicalUser: canonicalUserId },
-            Action: 's3:GetObject',
-            Resource: 'arn:aws:s3:::example-bucket/*'
-          }
-        ]
-      },
-      request: {
-        principal: {
-          type: 'CloudFrontOriginAccessIdentity',
-          arn: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
-          canonicalUserId
-        },
-        action: 's3:GetObject',
-        resource: { resource: 'arn:aws:s3:::example-bucket/object', accountId: '123456789012' },
-        contextVariables: {}
-      }
-    }
-    const response = await runSimulation(simulation, {})
-    expect(response.resultType).toBe('single')
-    if (response.resultType !== 'single') {
-      throw new Error('Expected single result')
-    }
-    expect(response.result.analysis?.result).toBe('Allowed')
-  })
-
   it('should return not allowed without erroring when an identity policy has a CloudFormation Sub resource string', async () => {
     //Given an identity policy with a CloudFormation Sub-style resource string (not a standard ARN)
     const simulation: Simulation = {

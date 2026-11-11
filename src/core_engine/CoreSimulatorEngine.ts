@@ -152,6 +152,16 @@ const serviceEngines: Record<string, new () => ServiceAuthorizer> = {
  * @returns the result of the authorization
  */
 export function authorize(request: AuthorizationRequest): RequestAnalysis {
+  // OAIs are modeled only for the validated S3 actions, never for other services.
+  const principal = request.request.principal
+  if (
+    principal.isAuthenticated() &&
+    isCloudFrontOriginAccessUserArn(principal.value()) &&
+    request.request.action.service() !== 's3'
+  ) {
+    return { result: 'ImplicitlyDenied', sameAccount: false }
+  }
+
   const principalHasPermissionBoundary =
     !!request.permissionBoundaries && request.permissionBoundaries.length > 0
   const simulationParameters = request.simulationParameters
@@ -219,18 +229,6 @@ export function authorize(request: AuthorizationRequest): RequestAnalysis {
     simulationParameters,
     serviceSettings: request.serviceSettings
   })
-
-  // OAIs are modeled only for the validated S3 actions, never for other services.
-  const principal = request.request.principal
-  if (
-    result.result === 'Allowed' &&
-    principal.isAuthenticated() &&
-    isCloudFrontOriginAccessUserArn(principal.value()) &&
-    request.request.action.service() !== 's3'
-  ) {
-    result.result = 'ImplicitlyDenied'
-    result.conditions = undefined
-  }
 
   if (simulationParameters.simulationMode === 'Discovery') {
     result.ignoredConditions = ignoredConditionsAnalysis(

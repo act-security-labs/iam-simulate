@@ -140,27 +140,13 @@ export function requestMatchesNotPrincipal(
      * We need to test this.
      */
 
-    // Live S3 probes showed this exact Deny NotPrincipal service form does not
-    // deny a legacy OAI, even though OAI is not a service principal. Limit the
-    // exception to the tested commercial partition and single service element.
-    const principal = request.principal
-    const observedOaiServiceException =
-      allowOrDeny === 'Deny' &&
-      request.action.service() === 's3' &&
-      principal.isAuthenticated() &&
-      principal.value().startsWith('arn:aws:iam::cloudfront:') &&
-      isCloudFrontOriginAccessUserArn(principal.value()) &&
-      notPrincipal.length === 1 &&
-      principalStatement.isServicePrincipal() &&
-      principalStatement.service() === 'cloudfront.amazonaws.com'
-
     // Invert the match result for NotPrincipal
     if (
-      observedOaiServiceException ||
       analysis.explain.matches === 'Match' ||
       analysis.explain.matches === 'AccountLevelMatch' ||
       analysis.explain.matches === 'SessionRoleMatch' ||
-      analysis.explain.matches === 'SessionUserMatch'
+      analysis.explain.matches === 'SessionUserMatch' ||
+      oaiMatchesCloudFrontNotPrincipal(request, principalStatement)
     ) {
       analysis.explain.matches = 'NoMatch'
     } else {
@@ -180,6 +166,23 @@ export function requestMatchesNotPrincipal(
     matches: 'Match',
     explains: analyses.map((a) => a.explain)
   }
+}
+
+/**
+ * An OAI is excluded by a CloudFront service entry in a NotPrincipal element.
+ *
+ * @param request the request being evaluated
+ * @param principal the NotPrincipal entry
+ * @returns whether the entry excludes the OAI
+ */
+function oaiMatchesCloudFrontNotPrincipal(request: AwsRequest, principal: Principal): boolean {
+  const requestPrincipal = request.principal
+  return (
+    requestPrincipal.isAuthenticated() &&
+    isCloudFrontOriginAccessUserArn(requestPrincipal.value()) &&
+    principal.isServicePrincipal() &&
+    principal.service() === 'cloudfront.amazonaws.com'
+  )
 }
 
 /**
@@ -224,10 +227,7 @@ export function requestMatchesPrincipalStatement(
   }
 
   if (principalStatement.isCanonicalUserPrincipal()) {
-    if (
-      principalStatement.canonicalUser() === requestPrincipal.value() ||
-      principalStatement.canonicalUser() === requestPrincipal.canonicalUserId?.()
-    ) {
+    if (principalStatement.canonicalUser() === requestPrincipal.value()) {
       return {
         explain: {
           matches: 'Match',

@@ -54,35 +54,6 @@ describe('requestPrincipalFromInput', () => {
     expect(principal.accountId()).toBeUndefined()
   })
 
-  it('retains the OAI ARN and explicit canonical alias', () => {
-    const arn = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
-    const principal = requestPrincipalFromInput({
-      type: 'CloudFrontOriginAccessIdentity',
-      arn,
-      canonicalUserId: 'canonical-id'
-    })
-    expect(principal.isAuthenticated()).toBe(true)
-    expect(principal.value()).toBe(arn)
-    expect(principal.accountId()).toBeUndefined()
-    expect(principal.canonicalUserId?.()).toBe('canonical-id')
-  })
-
-  it.each([
-    { type: 'CloudFrontOriginAccessIdentity', arn: 'not-an-oai' },
-    {
-      type: 'CloudFrontOriginAccessIdentity',
-      arn: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
-      canonicalUserId: ''
-    },
-    {
-      type: 'CloudFrontOriginAccessIdentity',
-      arn: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
-      accountId: '123456789012'
-    }
-  ])('rejects malformed OAI principal objects', (input) => {
-    expect(() => requestPrincipalFromInput(input as any)).toThrow('invalid.principal')
-  })
-
   it('throws a clear error for malformed object principals', () => {
     //Given a malformed principal input
     const principalInput = { type: 'User' }

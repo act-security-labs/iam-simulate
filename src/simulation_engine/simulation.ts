@@ -1,5 +1,3 @@
-import { isCloudFrontOriginAccessUserArn } from '@actsecurity/iam-utils'
-
 /**
  * Explicit marker for an unsigned anonymous request.
  */
@@ -7,18 +5,10 @@ export interface AnonymousRequestPrincipal {
   type: 'Anonymous'
 }
 
-/** A CloudFront OAI policy principal and its optional known S3 canonical user alias. */
-export interface CloudFrontOriginAccessIdentityRequestPrincipal {
-  type: 'CloudFrontOriginAccessIdentity'
-  arn: string
-  canonicalUserId?: string
-}
-
 /**
  * Principal value for a simulation request.
  */
-export type SimulationRequestPrincipal =
-  string | AnonymousRequestPrincipal | CloudFrontOriginAccessIdentityRequestPrincipal
+export type SimulationRequestPrincipal = string | AnonymousRequestPrincipal
 
 /**
  * Convenience value for anonymous simulations.
@@ -45,40 +35,13 @@ export function isAnonymousRequestPrincipal(value: unknown): value is AnonymousR
 }
 
 /**
- * Validate the OAI principal shape without inferring its canonical alias or owner.
- *
- * @param value the principal input
- * @returns whether the value is a valid OAI principal
- */
-export function isCloudFrontOriginAccessIdentityRequestPrincipal(
-  value: unknown
-): value is CloudFrontOriginAccessIdentityRequestPrincipal {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
-    return false
-  }
-  const principal = value as Record<string, unknown>
-  return (
-    Object.keys(principal).every((key) => ['type', 'arn', 'canonicalUserId'].includes(key)) &&
-    principal.type === 'CloudFrontOriginAccessIdentity' &&
-    typeof principal.arn === 'string' &&
-    isCloudFrontOriginAccessUserArn(principal.arn) &&
-    (!Object.hasOwn(principal, 'canonicalUserId') ||
-      (typeof principal.canonicalUserId === 'string' && principal.canonicalUserId.length > 0))
-  )
-}
-
-/**
  * Checks whether a value is a supported simulation request principal.
  *
  * @param value the value to check.
  * @returns true if the value is a string principal or the anonymous marker.
  */
 export function isSimulationRequestPrincipal(value: unknown): value is SimulationRequestPrincipal {
-  return (
-    typeof value === 'string' ||
-    isAnonymousRequestPrincipal(value) ||
-    isCloudFrontOriginAccessIdentityRequestPrincipal(value)
-  )
+  return typeof value === 'string' || isAnonymousRequestPrincipal(value)
 }
 
 /**

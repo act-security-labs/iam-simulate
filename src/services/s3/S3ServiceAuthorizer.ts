@@ -1,7 +1,6 @@
 import { isCloudFrontOriginAccessUserArn, isServicePrincipal } from '@actsecurity/iam-utils'
-import { resourceAllowStatementsExpression } from '../../analysis/allowedConditions.js'
 import { type RequestAnalysis } from '../../evaluate.js'
-import { DefaultServiceAuthorizer, type InitialEvaluation } from '../DefaultServiceAuthorizer.js'
+import { DefaultServiceAuthorizer } from '../DefaultServiceAuthorizer.js'
 import { type ServiceAuthorizationRequest } from '../ServiceAuthorizer.js'
 import { classifyS3RuntimePublicBucketPolicy } from './s3BlockPublicAccess.js'
 
@@ -31,38 +30,6 @@ const oaiAllowedActions = new Set([
  */
 export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
   /**
-   * Evaluate an OAI's resource-policy grant within the product's validated action cap.
-   * Other principals retain the default evaluation; guardrails are applied by the parent.
-   *
-   * @param request the analyzed service request
-   * @returns the core policy evaluation before guardrails
-   */
-  protected override initialEvaluationResult(
-    request: ServiceAuthorizationRequest
-  ): InitialEvaluation {
-    const principal = request.request.principal
-    if (!principal.isAuthenticated() || !isCloudFrontOriginAccessUserArn(principal.value())) {
-      return super.initialEvaluationResult(request)
-    }
-    if (request.sessionAnalysis && request.sessionAnalysis.result !== 'Allowed') {
-      return super.initialEvaluationResult(request)
-    }
-    if (
-      oaiAllowedActions.has(request.request.action.action().toLowerCase()) &&
-      request.resourceAnalysis.result === 'Allowed'
-    ) {
-      return {
-        result: 'Allowed',
-        conditions: resourceAllowStatementsExpression(request.resourceAnalysis.allowStatements)
-      }
-    }
-    return {
-      result: 'ImplicitlyDenied',
-      conditions: { conditionType: 'never', reason: 'noApplicableAllow' }
-    }
-  }
-
-  /**
    * Authorizes an S3 request and applies RestrictPublicBuckets when the caller supplied
    * S3 Block Public Access as enabled for the target bucket/account.
    *
@@ -74,6 +41,15 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
 
     if (baseResult.result !== 'Allowed') {
       return baseResult
+    }
+
+    const principal = request.request.principal
+    if (
+      principal.isAuthenticated() &&
+      isCloudFrontOriginAccessUserArn(principal.value()) &&
+      !oaiAllowedActions.has(request.request.action.action().toLowerCase())
+    ) {
+      return { ...baseResult, result: 'ImplicitlyDenied', conditions: undefined }
     }
 
     if (!isStandardS3BucketResource(request.request.resource.value())) {
@@ -97,7 +73,6 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
       return baseResult
     }
 
-    const principal = request.request.principal
     if (principal.isAuthenticated() && isServicePrincipal(principal.value())) {
       return baseResult
     }
