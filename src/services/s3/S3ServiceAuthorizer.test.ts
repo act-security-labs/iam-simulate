@@ -453,6 +453,41 @@ describe('S3ServiceAuthorizer', () => {
     }
   )
 
+  it('preserves an unknown OAI context value as a Discovery condition', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI discovery context',
+      principal,
+      context: { 'aws:PrincipalType': 'placeholder' },
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { AWS: principal },
+            Action: 's3:GetObject',
+            Resource: '*',
+            Condition: { StringEquals: { 'aws:PrincipalType': 'User' } }
+          }
+        ]
+      },
+      expected: { result: 'Allowed' }
+    })
+    request.simulationParameters = {
+      simulationMode: 'Discovery',
+      discoveryContextKeyConstraints: new DiscoveryContextKeyConstraints([
+        { keyName: 'aws:PrincipalType', presenceIsKnown: true, valueIsKnown: false }
+      ])
+    }
+    const result = authorize(request)
+    expect(result.result).toBe('Allowed')
+    expect(result.conditions).toMatchObject({
+      conditionType: 'condition',
+      key: 'aws:PrincipalType',
+      values: ['User']
+    })
+  })
+
   it('caps unvalidated OAI actions even if policies allow them', () => {
     const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
     const request = authorizationRequest({
