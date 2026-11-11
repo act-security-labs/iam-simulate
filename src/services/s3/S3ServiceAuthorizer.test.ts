@@ -453,6 +453,71 @@ describe('S3ServiceAuthorizer', () => {
     }
   )
 
+  it('does not apply a Deny NotPrincipal CloudFront service statement to an OAI', () => {
+    // Live S3 probes observed OAI requests allowed despite this NotPrincipal service deny.
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'OAI and CloudFront service NotPrincipal',
+      principal,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:GetObject', Resource: '*' },
+          {
+            Effect: 'Deny',
+            NotPrincipal: { Service: 'cloudfront.amazonaws.com' },
+            Action: 's3:GetObject',
+            Resource: '*'
+          }
+        ]
+      },
+      expected: { result: 'Allowed' }
+    })
+    expect(authorize(request).result).toBe('Allowed')
+  })
+
+  it('does not extend the observed NotPrincipal exception to other services', () => {
+    const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
+    const request = authorizationRequest({
+      name: 'unverified service exception',
+      principal,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: { AWS: principal }, Action: 's3:GetObject', Resource: '*' },
+          {
+            Effect: 'Deny',
+            NotPrincipal: { Service: 'lambda.amazonaws.com' },
+            Action: 's3:GetObject',
+            Resource: '*'
+          }
+        ]
+      },
+      expected: { result: 'ExplicitlyDenied' }
+    })
+    expect(authorize(request).result).toBe('ExplicitlyDenied')
+  })
+
+  it('does not treat an OAI as the CloudFront service principal in an Allow', () => {
+    const request = authorizationRequest({
+      name: 'OAI is not OAC',
+      principal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: { Service: 'cloudfront.amazonaws.com' },
+            Action: 's3:GetObject',
+            Resource: '*'
+          }
+        ]
+      },
+      expected: { result: 'ImplicitlyDenied' }
+    })
+    expect(authorize(request).result).toBe('ImplicitlyDenied')
+  })
+
   it('preserves an unknown OAI context value as a Discovery condition', () => {
     const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
     const request = authorizationRequest({
