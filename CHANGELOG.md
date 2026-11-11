@@ -1,3 +1,10 @@
+## [0.1.202](https://github.com/act-security-labs/iam-simulate/compare/v0.1.201...v0.1.202) (2026-11-11)
+
+
+### Bug Fixes
+
+* classify qualified Lambda resource types ([#222](https://github.com/act-security-labs/iam-simulate/issues/222)) ([f0da96d](https://github.com/act-security-labs/iam-simulate/commit/f0da96d68200e7d997da08f347c5196aad75c4ae))
+
 ## [0.1.201](https://github.com/act-security-labs/iam-simulate/compare/v0.1.200...v0.1.201) (2026-11-09)
 
 
