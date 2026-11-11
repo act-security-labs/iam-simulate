@@ -208,7 +208,10 @@ export function requestMatchesPrincipalStatement(
   }
 
   if (principalStatement.isCanonicalUserPrincipal()) {
-    if (principalStatement.canonicalUser() === requestPrincipal.value()) {
+    if (
+      principalStatement.canonicalUser() === requestPrincipal.value() ||
+      principalStatement.canonicalUser() === requestPrincipal.canonicalUserId?.()
+    ) {
       return {
         explain: {
           matches: 'Match',

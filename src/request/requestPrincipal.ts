@@ -1,6 +1,7 @@
 import { isCloudFrontOriginAccessUserArn } from '@actsecurity/iam-utils'
 import {
   isAnonymousRequestPrincipal,
+  isCloudFrontOriginAccessIdentityRequestPrincipal,
   isSimulationRequestPrincipal,
   type SimulationRequestPrincipal
 } from '../simulation_engine/simulation.js'
@@ -57,6 +58,9 @@ export interface AuthenticatedRequestPrincipal extends RequestPrincipal {
    * @returns the principal account ID, if available.
    */
   accountId(): string | undefined
+
+  /** Optional explicitly supplied S3 canonical-user alias. */
+  canonicalUserId?(): string | undefined
 }
 
 /**
@@ -92,6 +96,9 @@ export function requestPrincipalFromInput(input: SimulationRequestPrincipal): Re
   if (isAnonymousRequestPrincipal(input)) {
     return new AnonymousRequestPrincipalImpl()
   }
+  if (isCloudFrontOriginAccessIdentityRequestPrincipal(input)) {
+    return new AuthenticatedRequestPrincipalImpl(input.arn, input.canonicalUserId)
+  }
   return new AuthenticatedRequestPrincipalImpl(input)
 }
 
@@ -103,8 +110,16 @@ export class AuthenticatedRequestPrincipalImpl implements AuthenticatedRequestPr
    * Create an authenticated request principal.
    *
    * @param rawValue the raw principal string.
+   * @param canonicalAlias an explicitly supplied canonical-user alias.
    */
-  constructor(private readonly rawValue: string) {}
+  constructor(
+    private readonly rawValue: string,
+    private readonly canonicalAlias?: string
+  ) {}
+
+  canonicalUserId(): string | undefined {
+    return this.canonicalAlias
+  }
 
   kind(): 'Authenticated' {
     return 'Authenticated'

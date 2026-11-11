@@ -47,8 +47,10 @@ export { allowedContextKeysForRequest } from './simulation_engine/contextKeys.js
 export {
   anonymousPrincipal,
   isAnonymousRequestPrincipal,
+  isCloudFrontOriginAccessIdentityRequestPrincipal,
   isSimulationRequestPrincipal,
   type AnonymousRequestPrincipal,
+  type CloudFrontOriginAccessIdentityRequestPrincipal,
   type Simulation,
   type SimulationIdentityPolicy,
   type SimulationOrgPolicies,
