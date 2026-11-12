@@ -241,5 +241,318 @@
         }
       ]
     }
+  },
+  {
+    "name": "Discovery treats a key the action cannot carry as absent: a Null kms:ViaService Deny denies kms:GenerateRandom",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-random",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deny-direct",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*",
+                "Condition": {
+                  "Null": {
+                    "kms:ViaService": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:GenerateRandom",
+        "resource": {
+          "resource": "*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ExplicitlyDenied",
+      "results": [{}]
+    }
+  },
+  {
+    "name": "Discovery treats a key the action cannot carry as absent: a Null s3:prefix Deny denies s3:ListAllMyBuckets",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-list",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:ListAllMyBuckets",
+                "Resource": "*"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deny-no-prefix",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "s3:ListAllMyBuckets",
+                "Resource": "*",
+                "Condition": {
+                  "Null": {
+                    "s3:prefix": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:ListAllMyBuckets",
+        "resource": {
+          "resource": "*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ExplicitlyDenied",
+      "results": [{}]
+    }
+  },
+  {
+    "name": "Discovery does not apply an Allow conditioned on a key the action cannot carry",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-via-s3",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "kms:ViaService": "s3.us-east-1.amazonaws.com"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:GenerateRandom",
+        "resource": {
+          "resource": "*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}]
+    }
+  },
+  {
+    "name": "Discovery keeps a key the action can carry unknown: a Null kms:ViaService Deny stays a condition on kms:Decrypt",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-decrypt",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "kms:Decrypt",
+                "Resource": "*"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deny-direct",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "kms:Decrypt",
+                "Resource": "*",
+                "Condition": {
+                  "Null": {
+                    "kms:ViaService": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:Decrypt",
+        "resource": {
+          "resource": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "Null",
+            "key": "kms:ViaService",
+            "values": ["false"],
+            "sources": [
+              {
+                "policyType": "identity",
+                "effect": "Deny",
+                "policyIdentifier": "deny-direct",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Discovery keeps a templated key the action can carry unknown: kms:EncryptionContext Allow on kms:Encrypt",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:Encrypt",
+        "resource": {
+          "resource": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:user/Alice"
+            },
+            "Action": "kms:Encrypt",
+            "Resource": "*",
+            "Condition": {
+              "StringLike": {
+                "kms:EncryptionContext:aws:ecr:arn": "arn:aws:ecr:us-east-1:123456789012:repository/example"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringLike",
+            "key": "kms:EncryptionContext:aws:ecr:arn",
+            "values": ["arn:aws:ecr:us-east-1:123456789012:repository/example"],
+            "sources": [
+              {
+                "policyType": "resource",
+                "effect": "Allow",
+                "statementIndex": 2
+              }
+            ]
+          }
+        }
+      ]
+    }
   }
 ]

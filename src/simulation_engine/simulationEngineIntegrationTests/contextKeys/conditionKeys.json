@@ -94,5 +94,56 @@
       "overallResult": "ImplicitlyDenied",
       "resultType": "wildcard"
     }
+  },
+  {
+    "name": "a supplied value fills a templated condition key: kms:EncryptionContext on kms:Encrypt",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:Encrypt",
+        "resource": {
+          "resource": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "kms:EncryptionContext:aws:ecr:arn": "arn:aws:ecr:us-east-1:123456789012:repository/example"
+        }
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:user/Alice"
+            },
+            "Action": "kms:Encrypt",
+            "Resource": "*",
+            "Condition": {
+              "StringLike": {
+                "kms:EncryptionContext:aws:ecr:arn": "arn:aws:ecr:us-east-1:123456789012:repository/example"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [{}]
+    }
   }
 ]
