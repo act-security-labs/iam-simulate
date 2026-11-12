@@ -1,3 +1,10 @@
+## [0.1.203](https://github.com/act-security-labs/iam-simulate/compare/v0.1.202...v0.1.203) (2026-11-12)
+
+
+### Features
+
+* model CloudFront origin access identities ([#221](https://github.com/act-security-labs/iam-simulate/issues/221)) ([9441ad9](https://github.com/act-security-labs/iam-simulate/commit/9441ad9995ba786735ca5d338c2f702f15a2163c)), closes [#222](https://github.com/act-security-labs/iam-simulate/issues/222)
+
 ## [0.1.202](https://github.com/act-security-labs/iam-simulate/compare/v0.1.201...v0.1.202) (2026-11-11)
 
 
