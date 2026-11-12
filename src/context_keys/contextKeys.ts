@@ -120,6 +120,11 @@ export async function normalizeContextKeyCase(contextKey: string): Promise<strin
  * @returns the spec condition key with the variable portion replaced with the actual value
  */
 function replaceVariableInContextKey(specKey: string, actualKey: string): string {
+  const placeholderIndex = specKey.indexOf('${')
+  if (placeholderIndex !== -1) {
+    return specKey.slice(0, placeholderIndex) + actualKey.slice(placeholderIndex)
+  }
+
   const slashIndex = specKey.indexOf('/')
   if (slashIndex === -1) {
     return specKey

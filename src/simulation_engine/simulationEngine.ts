@@ -668,11 +668,20 @@ export async function normalizeSimulationParameters(
     )
   )
 
+  // Keys listed as templates, such as kms:EncryptionContext:${EncryptionContextKey}, are filled
+  // by any longer key that starts with the text before the placeholder.
+  const templateKeyPrefixes = [...contextVariablesForAction]
+    .filter((variable) => variable.includes('${'))
+    .map((variable) => variable.slice(0, variable.indexOf('${')))
+
   const isAllowedContextKey = (key: string): boolean => {
     const lowerCaseKey = key.toLowerCase()
     return (
       contextVariablesForAction.has(lowerCaseKey) ||
-      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction)
+      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction) ||
+      templateKeyPrefixes.some(
+        (prefix) => lowerCaseKey.startsWith(prefix) && lowerCaseKey.length > prefix.length
+      )
     )
   }
 

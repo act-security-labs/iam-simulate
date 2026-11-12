@@ -141,4 +141,46 @@ describe('Discovery mode with condition keys the action can never carry', () => 
     //Then the absent key already matches the Deny
     expect(response.overallResult).toEqual('ExplicitlyDenied')
   })
+
+  describe('keys that fill a template listed for the action', () => {
+    const keyArn = 'arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab'
+    const ecrArn = 'arn:aws:ecr:us-east-1:123456789012:repository/example'
+    const encryptSimulation = (contextVariables: Record<string, string>): Simulation => {
+      const simulation = simulationFor('kms:Encrypt', keyArn, [allowAllPolicy('kms:Encrypt')])
+      simulation.resourcePolicy = {
+        Statement: {
+          Effect: 'Allow',
+          Principal: { AWS: 'arn:aws:iam::123456789012:root' },
+          Action: 'kms:*',
+          Resource: '*',
+          Condition: { StringLike: { 'kms:EncryptionContext:aws:ecr:arn': ecrArn } }
+        }
+      }
+      simulation.request.contextVariables = contextVariables
+      return simulation
+    }
+
+    it('keeps a colon-style template key conditional in Discovery mode', async () => {
+      //Given an Allow conditioned on a key that fills kms:EncryptionContext:${EncryptionContextKey}
+      const simulation = encryptSimulation({})
+
+      //When the simulation runs in Discovery mode with no context values
+      const response = await runSingle(simulation, { simulationMode: 'Discovery' })
+
+      //Then the key's presence is unknown, so the Allow is not dropped
+      expect(response.overallResult).toEqual('Allowed')
+    })
+
+    it('uses a supplied template-filling context value in Strict mode', async () => {
+      //Given the same policy and a context value that fills the template
+      const simulation = encryptSimulation({ 'kms:EncryptionContext:aws:ecr:arn': ecrArn })
+
+      //When the simulation runs in Strict mode
+      const response = await runSingle(simulation, { simulationMode: 'Strict' })
+
+      //Then the value is kept and satisfies the Allow
+      expect(response.overallResult).toEqual('Allowed')
+      expect(response.result.ignoredContextKeys).not.toContain('kms:EncryptionContext:aws:ecr:arn')
+    })
+  })
 })
