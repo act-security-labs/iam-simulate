@@ -1,7 +1,6 @@
 import { iamActionDetails, iamResourceTypeDetails, type ResourceType } from '@actsecurity/iam-data'
 import { mostSpecificMatchingResourceTypePatterns } from '@actsecurity/iam-utils'
 
-const resourceWildcardPattern = /[*?]/
 const qualifiedLambdaFunctionArnPattern = /^arn:[^:]+:lambda:[^:]+:[^:]+:function:[^:]+:([^:]+)$/i
 const numericQualifierPattern = /^\d+$/
 
@@ -53,11 +52,7 @@ function disambiguateLambdaQualifier(
   resource: string,
   matchingTypes: ResourceType[]
 ): ResourceType[] {
-  if (
-    matchingTypes.length !== 2 ||
-    service.toLowerCase() !== 'lambda' ||
-    resourceWildcardPattern.test(resource)
-  ) {
+  if (matchingTypes.length !== 2 || service.toLowerCase() !== 'lambda' || resource.includes('*')) {
     return matchingTypes
   }
   const match = qualifiedLambdaFunctionArnPattern.exec(resource)
