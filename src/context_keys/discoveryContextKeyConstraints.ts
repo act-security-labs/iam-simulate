@@ -201,6 +201,23 @@ export class DiscoveryContextKeyConstraints {
   }
 
   /**
+   * Get a request-specific view of these constraints in which keys the request
+   * can never carry are known to be absent.
+   *
+   * Keys rejected by `isAllowedContextKey` are never placed in the request context,
+   * and AWS never supplies them for the action, so their absence is authoritative.
+   * Every other key resolves exactly as it does through `constraintFor`.
+   *
+   * @param isAllowedContextKey whether the request can carry the given context key
+   * @returns a constraints object usable wherever these constraints are
+   */
+  public withUnsupportedKeysAbsent(
+    isAllowedContextKey: (key: string) => boolean
+  ): DiscoveryContextKeyConstraints {
+    return new UnsupportedKeysAbsentConstraints(this, isAllowedContextKey)
+  }
+
+  /**
    * Adds a caller-provided constraint to the appropriate lookup index.
    *
    * Literal keys are stored in a case-insensitive map. Simple prefix-like regex
@@ -228,6 +245,42 @@ export class DiscoveryContextKeyConstraints {
       const existing = this.literalConstraints.get(key)
       this.literalConstraints.set(key, existing ? mergeStored(existing, stored) : stored)
     }
+  }
+}
+
+/**
+ * A request-specific view over Discovery constraints that treats context keys the
+ * request cannot carry as known to be absent.
+ */
+class UnsupportedKeysAbsentConstraints extends DiscoveryContextKeyConstraints {
+  /**
+   * Create the view.
+   *
+   * @param base the constraints used for every key the request can carry
+   * @param isAllowedContextKey whether the request can carry the given context key
+   */
+  constructor(
+    private readonly base: DiscoveryContextKeyConstraints,
+    private readonly isAllowedContextKey: (key: string) => boolean
+  ) {
+    super()
+  }
+
+  /**
+   * Get the effective Discovery constraint for a context key.
+   *
+   * A key the request cannot carry is reported as explicitly configured with known
+   * presence and value. Presence is authoritative for such keys because request
+   * normalization never puts them in the request context, so they are always absent.
+   *
+   * @param key the context key to look up
+   * @returns the known-absent constraint for unsupported keys, otherwise the base constraint
+   */
+  public override constraintFor(key: string): EffectiveDiscoveryContextKeyConstraint {
+    if (!this.isAllowedContextKey(key)) {
+      return { presenceIsKnown: true, valueIsKnown: true, explicitlyConfigured: true }
+    }
+    return this.base.constraintFor(key)
   }
 }
 

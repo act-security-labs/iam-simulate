@@ -485,7 +485,8 @@ export async function runSimulation(
 
   const curriedAuthorize = (
     curriedResourceString: string,
-    curriedContextValues: Record<string, string | string[]>
+    curriedContextValues: Record<string, string | string[]>,
+    isAllowedContextKey: (key: string) => boolean
   ) =>
     authorize({
       request: new AwsRequestImpl(
@@ -508,7 +509,10 @@ export async function runSimulation(
       vpcEndpointPolicies,
       simulationParameters: {
         simulationMode: simulationMode,
-        discoveryContextKeyConstraints
+        discoveryContextKeyConstraints:
+          simulationMode === 'Discovery'
+            ? discoveryContextKeyConstraints.withUnsupportedKeysAbsent(isAllowedContextKey)
+            : discoveryContextKeyConstraints
       },
       serviceSettings: {
         s3: {
@@ -530,11 +534,9 @@ export async function runSimulation(
 
   // If there is only one simulation to run, run it
   if (!runMultipleSimulations) {
-    const { validContextValues, ignoredContextKeys } = await normalizeSimulationParameters(
-      simulation,
-      undefined
-    )
-    const singleResult = curriedAuthorize(resourceArn, validContextValues)
+    const { validContextValues, ignoredContextKeys, isAllowedContextKey } =
+      await normalizeSimulationParameters(simulation, undefined)
+    const singleResult = curriedAuthorize(resourceArn, validContextValues, isAllowedContextKey)
     return {
       resultType: 'single',
       overallResult: singleResult.result,
@@ -553,13 +555,15 @@ export async function runSimulation(
   for (const resourceType of resourceTypesToSimulate) {
     // If "run multiple" get the resource strings that match the wildcard pattern, otherwise, just run the one.
 
-    const { validContextValues, ignoredContextKeys } = await normalizeSimulationParameters(
-      simulation,
-      resourceType
-    )
+    const { validContextValues, ignoredContextKeys, isAllowedContextKey } =
+      await normalizeSimulationParameters(simulation, resourceType)
 
     //Run the pattern directly first.
-    const exactPatternResult = curriedAuthorize(resourceArn, validContextValues)
+    const exactPatternResult = curriedAuthorize(
+      resourceArn,
+      validContextValues,
+      isAllowedContextKey
+    )
     if (exactPatternResult.result === 'ExplicitlyDenied') {
       simulationResults.push({
         analysis: exactPatternResult,
@@ -611,7 +615,11 @@ export async function runSimulation(
       ]
 
       for (const resourceString of resourceStrings) {
-        const simulationResult = curriedAuthorize(resourceString, validContextValues)
+        const simulationResult = curriedAuthorize(
+          resourceString,
+          validContextValues,
+          isAllowedContextKey
+        )
         const mergedConditions =
           simulationResult.result === 'Allowed'
             ? mergeAllowedConditionExpressions([
@@ -646,6 +654,7 @@ export async function normalizeSimulationParameters(
 ): Promise<{
   validContextValues: Record<string, string | string[]>
   ignoredContextKeys: string[]
+  isAllowedContextKey: (key: string) => boolean
 }> {
   const [service, action] = simulation.request.action.split(':')
   const resourceArn = simulation.request.resource.resource
@@ -659,16 +668,21 @@ export async function normalizeSimulationParameters(
     )
   )
 
+  const isAllowedContextKey = (key: string): boolean => {
+    const lowerCaseKey = key.toLowerCase()
+    return (
+      contextVariablesForAction.has(lowerCaseKey) ||
+      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction)
+    )
+  }
+
   //Get the types of the context variables and set a string or array of strings based on that.
   const validContextValues: Record<string, string | string[]> = {}
   const ignoredContextKeys: string[] = []
   for (const key of Object.keys(simulation.request.contextVariables)) {
     const value = simulation.request.contextVariables[key]
     const lowerCaseKey = key.toLowerCase()
-    if (
-      contextVariablesForAction.has(lowerCaseKey) ||
-      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction)
-    ) {
+    if (isAllowedContextKey(key)) {
       const conditionType = await typeForContextKey(lowerCaseKey)
       const normalizedKey = await normalizeContextKeyCase(key)
 
@@ -686,7 +700,8 @@ export async function normalizeSimulationParameters(
 
   return {
     validContextValues,
-    ignoredContextKeys
+    ignoredContextKeys,
+    isAllowedContextKey
   }
 }
 
