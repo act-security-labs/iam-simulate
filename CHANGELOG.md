@@ -1,3 +1,10 @@
+## [0.1.204](https://github.com/act-security-labs/iam-simulate/compare/v0.1.203...v0.1.204) (2026-11-12)
+
+
+### Bug Fixes
+
+* align Lambda wildcard detection ([#224](https://github.com/act-security-labs/iam-simulate/issues/224)) ([6df8bdb](https://github.com/act-security-labs/iam-simulate/commit/6df8bdb703a6842b22689c85fa93b132ddfc7313))
+
 ## [0.1.203](https://github.com/act-security-labs/iam-simulate/compare/v0.1.202...v0.1.203) (2026-11-12)
 
 
