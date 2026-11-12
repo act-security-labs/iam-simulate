@@ -130,13 +130,14 @@ function replaceVariableInContextKey(specKey: string, actualKey: string): string
 /**
  * Finds where the variable starts in a condition key spec: at the `${` of a template such as
  * `kms:EncryptionContext:${EncryptionContextKey}`, otherwise after the first `/`, as in
- * `aws:PrincipalTag/tag-key`.
+ * `aws:PrincipalTag/tag-key`. A `${` before the first `:` names a provider, as in
+ * `token.actions.${Domain}.ghe.com:actor`, not a variable in the key.
  *
  * @param specKey the string value of the condition key spec
  * @returns the index the variable starts at, or -1 if the key has no variable
  */
 export function variableIndexInContextKey(specKey: string): number {
-  const placeholderIndex = specKey.indexOf('${')
+  const placeholderIndex = specKey.indexOf('${', specKey.indexOf(':') + 1)
   if (placeholderIndex !== -1) {
     return placeholderIndex
   }

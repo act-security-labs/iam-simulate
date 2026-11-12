@@ -2,6 +2,7 @@ import {
   iamActionDetails,
   iamActionExists,
   iamServiceExists,
+  iamServiceKeys,
   type ResourceType
 } from '@actsecurity/iam-data'
 import {
@@ -490,7 +491,7 @@ export async function runSimulation(
   const curriedAuthorize = (
     curriedResourceString: string,
     curriedContextValues: Record<string, string | string[]>,
-    isAllowedContextKey: (key: string) => boolean
+    isUnsupportedContextKey: (key: string) => boolean
   ) =>
     authorize({
       request: new AwsRequestImpl(
@@ -515,7 +516,7 @@ export async function runSimulation(
         simulationMode: simulationMode,
         discoveryContextKeyConstraints:
           simulationMode === 'Discovery'
-            ? discoveryContextKeyConstraints.withUnsupportedKeysAbsent(isAllowedContextKey)
+            ? discoveryContextKeyConstraints.withUnsupportedKeysAbsent(isUnsupportedContextKey)
             : discoveryContextKeyConstraints
       },
       serviceSettings: {
@@ -538,9 +539,9 @@ export async function runSimulation(
 
   // If there is only one simulation to run, run it
   if (!runMultipleSimulations) {
-    const { validContextValues, ignoredContextKeys, isAllowedContextKey } =
+    const { validContextValues, ignoredContextKeys, isUnsupportedContextKey } =
       await normalizeSimulationParameters(simulation, undefined)
-    const singleResult = curriedAuthorize(resourceArn, validContextValues, isAllowedContextKey)
+    const singleResult = curriedAuthorize(resourceArn, validContextValues, isUnsupportedContextKey)
     return {
       resultType: 'single',
       overallResult: singleResult.result,
@@ -559,14 +560,14 @@ export async function runSimulation(
   for (const resourceType of resourceTypesToSimulate) {
     // If "run multiple" get the resource strings that match the wildcard pattern, otherwise, just run the one.
 
-    const { validContextValues, ignoredContextKeys, isAllowedContextKey } =
+    const { validContextValues, ignoredContextKeys, isUnsupportedContextKey } =
       await normalizeSimulationParameters(simulation, resourceType)
 
     //Run the pattern directly first.
     const exactPatternResult = curriedAuthorize(
       resourceArn,
       validContextValues,
-      isAllowedContextKey
+      isUnsupportedContextKey
     )
     if (exactPatternResult.result === 'ExplicitlyDenied') {
       simulationResults.push({
@@ -622,7 +623,7 @@ export async function runSimulation(
         const simulationResult = curriedAuthorize(
           resourceString,
           validContextValues,
-          isAllowedContextKey
+          isUnsupportedContextKey
         )
         const mergedConditions =
           simulationResult.result === 'Allowed'
@@ -658,25 +659,36 @@ export async function normalizeSimulationParameters(
 ): Promise<{
   validContextValues: Record<string, string | string[]>
   ignoredContextKeys: string[]
-  isAllowedContextKey: (key: string) => boolean
+  isUnsupportedContextKey: (key: string) => boolean
 }> {
   const [service, action] = simulation.request.action.split(':')
   const resourceArn = simulation.request.resource.resource
-  const contextVariablesForAction = new Set(
-    await allowedContextKeysForRequest(
-      service,
-      action,
-      resourceArn,
-      !!simulation.additionalSettings?.s3?.bucketAbacEnabled,
-      suggestedResourceType
+  const bucketAbacEnabled = simulation.additionalSettings?.s3?.bucketAbacEnabled
+  const contextKeysForRequest = async (abacEnabled: boolean) =>
+    new Set(
+      await allowedContextKeysForRequest(
+        service,
+        action,
+        resourceArn,
+        abacEnabled,
+        suggestedResourceType
+      )
     )
-  )
 
-  const isAllowedContextKey = (key: string): boolean => {
+  const contextVariablesForAction = await contextKeysForRequest(!!bucketAbacEnabled)
+  // Unless the caller says bucket ABAC is off, the request may carry tag keys.
+  const contextVariablesRequestMayCarry =
+    bucketAbacEnabled === undefined ? await contextKeysForRequest(true) : contextVariablesForAction
+  const servicesInIamData = new Set(await iamServiceKeys())
+
+  // iam-data only lists keys for AWS and its services, so a key it can't describe,
+  // such as an OIDC provider's, may still be in the request.
+  const isUnsupportedContextKey = (key: string): boolean => {
     const lowerCaseKey = key.toLowerCase()
+    const keyService = lowerCaseKey.split(':')[0]
     return (
-      contextVariablesForAction.has(lowerCaseKey) ||
-      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction)
+      (keyService === 'aws' || servicesInIamData.has(keyService)) &&
+      !setHasContextKey(contextVariablesRequestMayCarry, lowerCaseKey)
     )
   }
 
@@ -686,7 +698,7 @@ export async function normalizeSimulationParameters(
   for (const key of Object.keys(simulation.request.contextVariables)) {
     const value = simulation.request.contextVariables[key]
     const lowerCaseKey = key.toLowerCase()
-    if (isAllowedContextKey(key)) {
+    if (setHasContextKey(contextVariablesForAction, lowerCaseKey)) {
       const conditionType = await typeForContextKey(lowerCaseKey)
       const normalizedKey = await normalizeContextKeyCase(key)
 
@@ -705,8 +717,22 @@ export async function normalizeSimulationParameters(
   return {
     validContextValues,
     ignoredContextKeys,
-    isAllowedContextKey
+    isUnsupportedContextKey
   }
+}
+
+/**
+ * Checks whether a set of allowed context keys contains a context key, directly or
+ * through a key with a variable.
+ *
+ * @param contextVariables The set of lower case context keys to check against.
+ * @param lowerCaseKey The lower case key to check for.
+ * @returns True if the set contains the key, false otherwise.
+ */
+function setHasContextKey(contextVariables: Set<string>, lowerCaseKey: string): boolean {
+  return (
+    contextVariables.has(lowerCaseKey) || listHasVariableKeyMatch(lowerCaseKey, contextVariables)
+  )
 }
 
 /**
@@ -721,11 +747,7 @@ export async function normalizeSimulationParameters(
 function listHasVariableKeyMatch(lowerCaseKey: string, contextVariables: Set<string>): boolean {
   for (const variable of contextVariables) {
     const variableIndex = variableIndexInContextKey(variable)
-    if (
-      variableIndex !== -1 &&
-      lowerCaseKey.length > variableIndex &&
-      lowerCaseKey.startsWith(variable.slice(0, variableIndex))
-    ) {
+    if (variableIndex !== -1 && lowerCaseKey.startsWith(variable.slice(0, variableIndex))) {
       return true
     }
   }

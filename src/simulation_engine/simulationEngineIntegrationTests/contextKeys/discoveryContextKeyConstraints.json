@@ -554,5 +554,330 @@
         }
       ]
     }
+  },
+  {
+    "name": "Discovery keeps an OIDC provider's key unknown, since iam-data can't list every provider: EKS service account trust",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "sts:AssumeRoleWithWebIdentity",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/web-role",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE",
+        "contextVariables": {}
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringEquals": {
+                "oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE:sub": "system:serviceaccount:ns:sa"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "oidc.eks.us-east-1.amazonaws.com/id/EXAMPLE:sub",
+            "values": ["system:serviceaccount:ns:sa"],
+            "sources": [
+              {
+                "effect": "Allow",
+                "policyType": "resource",
+                "statementIndex": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Discovery keeps an OIDC provider's key unknown, since iam-data can't list every provider: GitLab trust on a wildcard role",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "sts:AssumeRoleWithWebIdentity",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:oidc-provider/gitlab.com",
+        "contextVariables": {}
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::123456789012:oidc-provider/gitlab.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringLike": {
+                "gitlab.com:sub": "project_path:group/project:*"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "role",
+          "resourcePattern": "arn:aws:iam::123456789012:role/*",
+          "result": "Allowed",
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringLike",
+            "key": "gitlab.com:sub",
+            "values": ["project_path:group/project:*"],
+            "sources": [
+              {
+                "effect": "Allow",
+                "policyType": "resource",
+                "statementIndex": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Discovery keeps a caller's constraint on a key the action cannot carry: kms:ViaService unknown on kms:GenerateRandom",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-random",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deny-direct",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*",
+                "Condition": {
+                  "Null": {
+                    "kms:ViaService": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:GenerateRandom",
+        "resource": {
+          "resource": "*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        {
+          "keyName": "kms:ViaService",
+          "presenceIsKnown": false,
+          "valueIsKnown": false
+        }
+      ]
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "Null",
+            "key": "kms:ViaService",
+            "values": ["false"],
+            "sources": [
+              {
+                "effect": "Deny",
+                "policyIdentifier": "deny-direct",
+                "policyType": "identity",
+                "statementIndex": 1
+              }
+            ],
+            "inverted": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Discovery keeps S3 tag keys unknown when the caller doesn't say whether bucket ABAC is on",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-team",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/team": "blue"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object.txt",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:ResourceTag/team",
+            "values": ["blue"],
+            "sources": [
+              {
+                "effect": "Allow",
+                "policyIdentifier": "allow-team",
+                "policyType": "identity",
+                "statementIndex": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "Discovery treats a key the action cannot carry as absent on every resource of a wildcard: a Null s3:prefix Deny denies s3:GetObject",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-get",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "*"
+              }
+            ]
+          }
+        },
+        {
+          "name": "deny-no-prefix",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Deny",
+                "Action": "s3:GetObject",
+                "Resource": "*",
+                "Condition": {
+                  "Null": {
+                    "s3:prefix": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/*",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "wildcard",
+      "overallResult": "ExplicitlyDenied",
+      "results": [
+        {
+          "resourceType": "object",
+          "resourcePattern": "arn:aws:s3:::example-bucket/*",
+          "result": "ExplicitlyDenied"
+        }
+      ]
+    }
   }
 ]

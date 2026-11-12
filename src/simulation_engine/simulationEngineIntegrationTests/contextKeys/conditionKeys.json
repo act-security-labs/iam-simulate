@@ -145,5 +145,44 @@
       "overallResult": "Allowed",
       "results": [{}]
     }
+  },
+  {
+    "name": "a supplied value for a key under a templated OIDC provider is ignored, not an error: token.actions.githubusercontent.com:sub",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "sts:AssumeRoleWithWebIdentity",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/web-role",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com",
+        "contextVariables": {
+          "token.actions.githubusercontent.com:sub": "repo:org/repo:ref:refs/heads/main"
+        }
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity"
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [{}]
+    }
   }
 ]
