@@ -120,18 +120,28 @@ export async function normalizeContextKeyCase(contextKey: string): Promise<strin
  * @returns the spec condition key with the variable portion replaced with the actual value
  */
 function replaceVariableInContextKey(specKey: string, actualKey: string): string {
-  const placeholderIndex = specKey.indexOf('${')
-  if (placeholderIndex !== -1) {
-    return specKey.slice(0, placeholderIndex) + actualKey.slice(placeholderIndex)
-  }
-
-  const slashIndex = specKey.indexOf('/')
-  if (slashIndex === -1) {
+  const variableIndex = variableIndexInContextKey(specKey)
+  if (variableIndex === -1) {
     return specKey
   }
-  const prefix = specKey.slice(0, slashIndex)
-  const suffix = actualKey.slice(slashIndex)
-  return prefix + suffix
+  return specKey.slice(0, variableIndex) + actualKey.slice(variableIndex)
+}
+
+/**
+ * Finds where the variable starts in a condition key spec: at the `${` of a template such as
+ * `kms:EncryptionContext:${EncryptionContextKey}`, otherwise after the first `/`, as in
+ * `aws:PrincipalTag/tag-key`.
+ *
+ * @param specKey the string value of the condition key spec
+ * @returns the index the variable starts at, or -1 if the key has no variable
+ */
+export function variableIndexInContextKey(specKey: string): number {
+  const placeholderIndex = specKey.indexOf('${')
+  if (placeholderIndex !== -1) {
+    return placeholderIndex
+  }
+  const slashIndex = specKey.indexOf('/')
+  return slashIndex === -1 ? -1 : slashIndex + 1
 }
 
 /**

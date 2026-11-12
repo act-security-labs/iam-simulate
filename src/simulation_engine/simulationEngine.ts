@@ -17,7 +17,11 @@ import {
 import { isAssumedRoleArn, isFederatedUserArn, isIamRoleArn } from '@actsecurity/iam-utils'
 import { mergeAllowedConditionExpressions } from '../analysis/allowedConditions.js'
 import { isConditionKeyArray } from '../context_keys/contextKeyTypes.js'
-import { normalizeContextKeyCase, typeForContextKey } from '../context_keys/contextKeys.js'
+import {
+  normalizeContextKeyCase,
+  typeForContextKey,
+  variableIndexInContextKey
+} from '../context_keys/contextKeys.js'
 import { DiscoveryContextKeyConstraints } from '../context_keys/discoveryContextKeyConstraints.js'
 import {
   authorize,
@@ -668,20 +672,11 @@ export async function normalizeSimulationParameters(
     )
   )
 
-  // Keys listed as templates, such as kms:EncryptionContext:${EncryptionContextKey}, are filled
-  // by any longer key that starts with the text before the placeholder.
-  const templateKeyPrefixes = [...contextVariablesForAction]
-    .filter((variable) => variable.includes('${'))
-    .map((variable) => variable.slice(0, variable.indexOf('${')))
-
   const isAllowedContextKey = (key: string): boolean => {
     const lowerCaseKey = key.toLowerCase()
     return (
       contextVariablesForAction.has(lowerCaseKey) ||
-      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction) ||
-      templateKeyPrefixes.some(
-        (prefix) => lowerCaseKey.startsWith(prefix) && lowerCaseKey.length > prefix.length
-      )
+      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction)
     )
   }
 
@@ -715,22 +710,22 @@ export async function normalizeSimulationParameters(
 }
 
 /**
- * Evaluates a context key with a variable such as `aws:PrincipalTag/Foo` to see
- * if it matches any of the context variables in the allowed variables set.
+ * Evaluates a context key with a variable such as `aws:PrincipalTag/Foo` or
+ * `kms:EncryptionContext:Foo` to see if it matches any of the context variables in the
+ * allowed variables set.
  *
  * @param lowerCaseKey The lower case key to check for a match.
  * @param contextVariables The set of context variables to check against.
  * @returns True if the key has a variable match, false otherwise.
  */
 function listHasVariableKeyMatch(lowerCaseKey: string, contextVariables: Set<string>): boolean {
-  const firstSlashIndex = lowerCaseKey.indexOf('/')
-  if (firstSlashIndex === -1) {
-    return false
-  }
-
-  const prefix = lowerCaseKey.slice(0, firstSlashIndex + 1)
   for (const variable of contextVariables) {
-    if (variable.startsWith(prefix)) {
+    const variableIndex = variableIndexInContextKey(variable)
+    if (
+      variableIndex !== -1 &&
+      lowerCaseKey.length > variableIndex &&
+      lowerCaseKey.startsWith(variable.slice(0, variableIndex))
+    ) {
       return true
     }
   }
