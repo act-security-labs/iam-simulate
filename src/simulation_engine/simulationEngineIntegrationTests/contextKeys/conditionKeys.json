@@ -147,7 +147,7 @@
     }
   },
   {
-    "name": "a supplied value for a key under a templated OIDC provider is ignored, not an error: token.actions.githubusercontent.com:sub",
+    "name": "a supplied OIDC provider key satisfies a web identity trust condition",
     "simulation": {
       "identityPolicies": [],
       "serviceControlPolicies": [],
@@ -171,7 +171,12 @@
             "Principal": {
               "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
             },
-            "Action": "sts:AssumeRoleWithWebIdentity"
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringEquals": {
+                "token.actions.githubusercontent.com:sub": "repo:org/repo:ref:refs/heads/main"
+              }
+            }
           }
         ]
       }

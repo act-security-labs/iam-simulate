@@ -757,7 +757,7 @@
     }
   },
   {
-    "name": "Discovery keeps S3 tag keys unknown when the caller doesn't say whether bucket ABAC is on",
+    "name": "Discovery treats S3 tag keys as absent when bucket ABAC is unspecified",
     "simulation": {
       "identityPolicies": [
         {
@@ -796,25 +796,8 @@
     },
     "expected": {
       "resultType": "single",
-      "overallResult": "Allowed",
-      "results": [
-        {
-          "conditions": {
-            "conditionType": "condition",
-            "op": "StringEquals",
-            "key": "aws:ResourceTag/team",
-            "values": ["blue"],
-            "sources": [
-              {
-                "effect": "Allow",
-                "policyIdentifier": "allow-team",
-                "policyType": "identity",
-                "statementIndex": 1
-              }
-            ]
-          }
-        }
-      ]
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}]
     }
   },
   {

@@ -30,7 +30,7 @@ const oidcKeys = new Set([
   'rpst_id',
   'google/organization_number'
 ])
-const oidcProviderPattern = /^[0-9a-zA-Z\._\-]+$/
+const oidcProviderPattern = /^[0-9a-zA-Z._\-/]+$/
 
 /**
  * Check if a context key actually exists
@@ -163,6 +163,10 @@ export async function typeForContextKey(contextKey: string): Promise<ConditionKe
     return keyDetails.type as ConditionKeyType
   }
 
+  if (isOidcConditionKey(contextKey)) {
+    return contextKey.split(':')[1].toLowerCase() === 'amr' ? 'ArrayOfString' : 'String'
+  }
+
   throw new Error(`Condition key ${contextKey} not found`)
 }
 
@@ -172,11 +176,11 @@ export async function typeForContextKey(contextKey: string): Promise<ConditionKe
  * @param key the key to check
  * @returns true if the key is a valid OIDC condition key
  */
-function isOidcConditionKey(key: string): boolean {
+export function isOidcConditionKey(key: string): boolean {
   const parts = key.split(':')
   if (parts.length !== 2) {
     return false
   }
   const [service, action] = parts
-  return oidcKeys.has(action) && oidcProviderPattern.test(service)
+  return oidcKeys.has(action.toLowerCase()) && oidcProviderPattern.test(service)
 }

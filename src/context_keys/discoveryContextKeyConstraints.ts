@@ -143,8 +143,12 @@ export class DiscoveryContextKeyConstraints {
    * Create Discovery context key constraints.
    *
    * @param constraints the constraint definitions to index
+   * @param isUnsupportedContextKey whether a key cannot be carried by this request
    */
-  constructor(constraints: DiscoveryContextKeyConstraint[] = []) {
+  constructor(
+    constraints: DiscoveryContextKeyConstraint[] = [],
+    private readonly isUnsupportedContextKey: (key: string) => boolean = () => false
+  ) {
     for (const constraint of constraints) {
       const runtimeConstraint = constraint as {
         keyName: string
@@ -202,26 +206,11 @@ export class DiscoveryContextKeyConstraints {
       }
     }
 
+    if (!result.explicitlyConfigured && this.isUnsupportedContextKey(key)) {
+      result = knownAbsent
+    }
     this.resolvedCache.set(key, result)
     return result
-  }
-
-  /**
-   * Get a request-specific view of these constraints in which keys the request
-   * can never carry are known to be absent.
-   *
-   * Keys accepted by `isUnsupportedContextKey` are never placed in the request context,
-   * and AWS never supplies them for the action, so their absence is authoritative.
-   * A key the caller configured keeps the caller's constraint, and every other key
-   * resolves exactly as it does through `constraintFor`.
-   *
-   * @param isUnsupportedContextKey whether the request can never carry the given context key
-   * @returns a constraints object usable wherever these constraints are
-   */
-  public withUnsupportedKeysAbsent(
-    isUnsupportedContextKey: (key: string) => boolean
-  ): DiscoveryContextKeyConstraints {
-    return new UnsupportedKeysAbsentConstraints(this, isUnsupportedContextKey)
   }
 
   /**
@@ -252,53 +241,6 @@ export class DiscoveryContextKeyConstraints {
       const existing = this.literalConstraints.get(key)
       this.literalConstraints.set(key, existing ? mergeStored(existing, stored) : stored)
     }
-  }
-}
-
-/**
- * A request-specific view over Discovery constraints that treats context keys the
- * request cannot carry as known to be absent.
- */
-class UnsupportedKeysAbsentConstraints extends DiscoveryContextKeyConstraints {
-  private readonly resolved = new Map<string, EffectiveDiscoveryContextKeyConstraint>()
-
-  /**
-   * Create the view.
-   *
-   * @param base the caller's constraints
-   * @param isUnsupportedContextKey whether the request can never carry the given context key
-   */
-  constructor(
-    private readonly base: DiscoveryContextKeyConstraints,
-    private readonly isUnsupportedContextKey: (key: string) => boolean
-  ) {
-    super()
-  }
-
-  /**
-   * Get the effective Discovery constraint for a context key.
-   *
-   * A key the request cannot carry, and the caller did not configure, is reported as
-   * explicitly configured with known presence and value. Presence is authoritative for
-   * such keys because request normalization never puts them in the request context,
-   * so they are always absent.
-   *
-   * @param key the context key to look up
-   * @returns the known-absent constraint for unsupported keys, otherwise the base constraint
-   */
-  public override constraintFor(key: string): EffectiveDiscoveryContextKeyConstraint {
-    const cached = this.resolved.get(key)
-    if (cached) {
-      return cached
-    }
-
-    const constraint = this.base.constraintFor(key)
-    const result =
-      !constraint.explicitlyConfigured && this.isUnsupportedContextKey(key)
-        ? knownAbsent
-        : constraint
-    this.resolved.set(key, result)
-    return result
   }
 }
 
