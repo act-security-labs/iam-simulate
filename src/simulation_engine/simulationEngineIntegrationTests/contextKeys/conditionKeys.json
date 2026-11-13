@@ -94,5 +94,100 @@
       "overallResult": "ImplicitlyDenied",
       "resultType": "wildcard"
     }
+  },
+  {
+    "name": "a supplied KMS encryption context key matches its iam-data template",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:Encrypt",
+        "resource": {
+          "resource": "arn:aws:kms:us-east-1:123456789012:key/1234abcd-12ab-34cd-56ef-1234567890ab",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "kms:EncryptionContext:aws:ecr:arn": "arn:aws:ecr:us-east-1:123456789012:repository/example"
+        }
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:root"
+            },
+            "Action": "kms:*",
+            "Resource": "*"
+          },
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::123456789012:user/Alice"
+            },
+            "Action": "kms:Encrypt",
+            "Resource": "*",
+            "Condition": {
+              "StringLike": {
+                "kms:EncryptionContext:aws:ecr:arn": "arn:aws:ecr:us-east-1:123456789012:repository/example"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {},
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [{}]
+    }
+  },
+  {
+    "name": "a supplied OIDC provider key satisfies a web identity trust condition",
+    "simulation": {
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "sts:AssumeRoleWithWebIdentity",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/web-role",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com",
+        "contextVariables": {
+          "token.actions.githubusercontent.com:sub": "repo:org/repo:ref:refs/heads/main"
+        }
+      },
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::123456789012:oidc-provider/token.actions.githubusercontent.com"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringEquals": {
+                "token.actions.githubusercontent.com:sub": "repo:org/repo:ref:refs/heads/main"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [{}]
+    }
   }
 ]

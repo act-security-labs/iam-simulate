@@ -90,6 +90,12 @@ const unconstrained: EffectiveDiscoveryContextKeyConstraint = {
   explicitlyConfigured: false
 }
 
+const knownAbsent: EffectiveDiscoveryContextKeyConstraint = {
+  presenceIsKnown: true,
+  valueIsKnown: true,
+  explicitlyConfigured: true
+}
+
 /**
  * Internal representation of the two knowledge booleans stored in lookup indexes.
  *
@@ -137,8 +143,12 @@ export class DiscoveryContextKeyConstraints {
    * Create Discovery context key constraints.
    *
    * @param constraints the constraint definitions to index
+   * @param isUnsupportedContextKey whether a key cannot be carried by this request
    */
-  constructor(constraints: DiscoveryContextKeyConstraint[] = []) {
+  constructor(
+    constraints: DiscoveryContextKeyConstraint[] = [],
+    private readonly isUnsupportedContextKey: (key: string) => boolean = () => false
+  ) {
     for (const constraint of constraints) {
       const runtimeConstraint = constraint as {
         keyName: string
@@ -196,6 +206,9 @@ export class DiscoveryContextKeyConstraints {
       }
     }
 
+    if (!result.explicitlyConfigured && this.isUnsupportedContextKey(key)) {
+      result = knownAbsent
+    }
     this.resolvedCache.set(key, result)
     return result
   }

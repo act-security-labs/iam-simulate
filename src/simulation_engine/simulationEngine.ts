@@ -14,10 +14,20 @@ import {
   validateServiceControlPolicy,
   type ValidationError
 } from '@actsecurity/iam-policy'
-import { isAssumedRoleArn, isFederatedUserArn, isIamRoleArn } from '@actsecurity/iam-utils'
+import {
+  isAssumedRoleArn,
+  isFederatedUserArn,
+  isIamRoleArn,
+  normalizeCaseInsensitive
+} from '@actsecurity/iam-utils'
 import { mergeAllowedConditionExpressions } from '../analysis/allowedConditions.js'
 import { isConditionKeyArray } from '../context_keys/contextKeyTypes.js'
-import { normalizeContextKeyCase, typeForContextKey } from '../context_keys/contextKeys.js'
+import {
+  isOidcConditionKey,
+  normalizeContextKeyCase,
+  typeForContextKey,
+  variableIndexInContextKey
+} from '../context_keys/contextKeys.js'
 import { DiscoveryContextKeyConstraints } from '../context_keys/discoveryContextKeyConstraints.js'
 import {
   authorize,
@@ -478,14 +488,18 @@ export async function runSimulation(
 
   // For each resource type, find the resource patterns, for each pattern, run a simulation
 
-  const discoveryContextKeyConstraints =
+  const constraintsForRequest = (isUnsupportedContextKey: (key: string) => boolean) =>
     simulationMode === 'Discovery'
-      ? new DiscoveryContextKeyConstraints(simulationOptions.discoveryContextKeyConstraints || [])
+      ? new DiscoveryContextKeyConstraints(
+          simulationOptions.discoveryContextKeyConstraints || [],
+          isUnsupportedContextKey
+        )
       : new DiscoveryContextKeyConstraints([])
 
   const curriedAuthorize = (
     curriedResourceString: string,
-    curriedContextValues: Record<string, string | string[]>
+    curriedContextValues: Record<string, string | string[]>,
+    discoveryContextKeyConstraints: DiscoveryContextKeyConstraints
   ) =>
     authorize({
       request: new AwsRequestImpl(
@@ -530,11 +544,13 @@ export async function runSimulation(
 
   // If there is only one simulation to run, run it
   if (!runMultipleSimulations) {
-    const { validContextValues, ignoredContextKeys } = await normalizeSimulationParameters(
-      simulation,
-      undefined
+    const { validContextValues, ignoredContextKeys, isUnsupportedContextKey } =
+      await normalizeSimulationParameters(simulation, undefined)
+    const singleResult = curriedAuthorize(
+      resourceArn,
+      validContextValues,
+      constraintsForRequest(isUnsupportedContextKey)
     )
-    const singleResult = curriedAuthorize(resourceArn, validContextValues)
     return {
       resultType: 'single',
       overallResult: singleResult.result,
@@ -553,13 +569,17 @@ export async function runSimulation(
   for (const resourceType of resourceTypesToSimulate) {
     // If "run multiple" get the resource strings that match the wildcard pattern, otherwise, just run the one.
 
-    const { validContextValues, ignoredContextKeys } = await normalizeSimulationParameters(
-      simulation,
-      resourceType
-    )
+    const { validContextValues, ignoredContextKeys, isUnsupportedContextKey } =
+      await normalizeSimulationParameters(simulation, resourceType)
+
+    const discoveryContextKeyConstraints = constraintsForRequest(isUnsupportedContextKey)
 
     //Run the pattern directly first.
-    const exactPatternResult = curriedAuthorize(resourceArn, validContextValues)
+    const exactPatternResult = curriedAuthorize(
+      resourceArn,
+      validContextValues,
+      discoveryContextKeyConstraints
+    )
     if (exactPatternResult.result === 'ExplicitlyDenied') {
       simulationResults.push({
         analysis: exactPatternResult,
@@ -611,7 +631,11 @@ export async function runSimulation(
       ]
 
       for (const resourceString of resourceStrings) {
-        const simulationResult = curriedAuthorize(resourceString, validContextValues)
+        const simulationResult = curriedAuthorize(
+          resourceString,
+          validContextValues,
+          discoveryContextKeyConstraints
+        )
         const mergedConditions =
           simulationResult.result === 'Allowed'
             ? mergeAllowedConditionExpressions([
@@ -646,6 +670,7 @@ export async function normalizeSimulationParameters(
 ): Promise<{
   validContextValues: Record<string, string | string[]>
   ignoredContextKeys: string[]
+  isUnsupportedContextKey: (key: string) => boolean
 }> {
   const [service, action] = simulation.request.action.split(':')
   const resourceArn = simulation.request.resource.resource
@@ -654,10 +679,20 @@ export async function normalizeSimulationParameters(
       service,
       action,
       resourceArn,
-      !!simulation.additionalSettings?.s3?.bucketAbacEnabled,
+      simulation.additionalSettings?.s3?.bucketAbacEnabled === true,
       suggestedResourceType
     )
   )
+  const isSupportedContextKey = (key: string): boolean => {
+    const lowerCaseKey = normalizeCaseInsensitive(key)
+    return (
+      setHasContextKey(contextVariablesForAction, lowerCaseKey) ||
+      (simulation.request.action.toLowerCase() === 'sts:assumerolewithwebidentity' &&
+        lowerCaseKey.split(':')[0].split('/')[0].includes('.') &&
+        isOidcConditionKey(lowerCaseKey))
+    )
+  }
+  const isUnsupportedContextKey = (key: string): boolean => !isSupportedContextKey(key)
 
   //Get the types of the context variables and set a string or array of strings based on that.
   const validContextValues: Record<string, string | string[]> = {}
@@ -665,10 +700,7 @@ export async function normalizeSimulationParameters(
   for (const key of Object.keys(simulation.request.contextVariables)) {
     const value = simulation.request.contextVariables[key]
     const lowerCaseKey = key.toLowerCase()
-    if (
-      contextVariablesForAction.has(lowerCaseKey) ||
-      listHasVariableKeyMatch(lowerCaseKey, contextVariablesForAction)
-    ) {
+    if (isSupportedContextKey(key)) {
       const conditionType = await typeForContextKey(lowerCaseKey)
       const normalizedKey = await normalizeContextKeyCase(key)
 
@@ -686,27 +718,38 @@ export async function normalizeSimulationParameters(
 
   return {
     validContextValues,
-    ignoredContextKeys
+    ignoredContextKeys,
+    isUnsupportedContextKey
   }
 }
 
 /**
- * Evaluates a context key with a variable such as `aws:PrincipalTag/Foo` to see
- * if it matches any of the context variables in the allowed variables set.
+ * Checks whether a set of allowed context keys contains a context key, directly or
+ * through a key with a variable.
+ *
+ * @param contextVariables The set of lower case context keys to check against.
+ * @param lowerCaseKey The lower case key to check for.
+ * @returns True if the set contains the key, false otherwise.
+ */
+function setHasContextKey(contextVariables: Set<string>, lowerCaseKey: string): boolean {
+  return (
+    contextVariables.has(lowerCaseKey) || listHasVariableKeyMatch(lowerCaseKey, contextVariables)
+  )
+}
+
+/**
+ * Evaluates a context key with a variable such as `aws:PrincipalTag/Foo` or
+ * `kms:EncryptionContext:Foo` to see if it matches any of the context variables in the
+ * allowed variables set.
  *
  * @param lowerCaseKey The lower case key to check for a match.
  * @param contextVariables The set of context variables to check against.
  * @returns True if the key has a variable match, false otherwise.
  */
 function listHasVariableKeyMatch(lowerCaseKey: string, contextVariables: Set<string>): boolean {
-  const firstSlashIndex = lowerCaseKey.indexOf('/')
-  if (firstSlashIndex === -1) {
-    return false
-  }
-
-  const prefix = lowerCaseKey.slice(0, firstSlashIndex + 1)
   for (const variable of contextVariables) {
-    if (variable.startsWith(prefix)) {
+    const variableIndex = variableIndexInContextKey(variable)
+    if (variableIndex !== -1 && lowerCaseKey.startsWith(variable.slice(0, variableIndex))) {
       return true
     }
   }

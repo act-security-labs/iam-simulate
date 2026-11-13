@@ -30,7 +30,7 @@ const oidcKeys = new Set([
   'rpst_id',
   'google/organization_number'
 ])
-const oidcProviderPattern = /^[0-9a-zA-Z\._\-]+$/
+const oidcProviderPattern = /^[0-9a-zA-Z._\-/]+$/
 
 /**
  * Check if a context key actually exists
@@ -120,13 +120,29 @@ export async function normalizeContextKeyCase(contextKey: string): Promise<strin
  * @returns the spec condition key with the variable portion replaced with the actual value
  */
 function replaceVariableInContextKey(specKey: string, actualKey: string): string {
-  const slashIndex = specKey.indexOf('/')
-  if (slashIndex === -1) {
+  const variableIndex = variableIndexInContextKey(specKey)
+  if (variableIndex === -1) {
     return specKey
   }
-  const prefix = specKey.slice(0, slashIndex)
-  const suffix = actualKey.slice(slashIndex)
-  return prefix + suffix
+  return specKey.slice(0, variableIndex) + actualKey.slice(variableIndex)
+}
+
+/**
+ * Finds where the variable starts in a condition key spec: at the `${` of a template such as
+ * `kms:EncryptionContext:${EncryptionContextKey}`, otherwise after the first `/`, as in
+ * `aws:PrincipalTag/tag-key`. A `${` before the first `:` names a provider, as in
+ * `token.actions.${Domain}.ghe.com:actor`, not a variable in the key.
+ *
+ * @param specKey the string value of the condition key spec
+ * @returns the index the variable starts at, or -1 if the key has no variable
+ */
+export function variableIndexInContextKey(specKey: string): number {
+  const placeholderIndex = specKey.indexOf('${', specKey.indexOf(':') + 1)
+  if (placeholderIndex !== -1) {
+    return placeholderIndex
+  }
+  const slashIndex = specKey.indexOf('/')
+  return slashIndex === -1 ? -1 : slashIndex + 1
 }
 
 /**
@@ -147,6 +163,10 @@ export async function typeForContextKey(contextKey: string): Promise<ConditionKe
     return keyDetails.type as ConditionKeyType
   }
 
+  if (isOidcConditionKey(contextKey)) {
+    return contextKey.split(':')[1].toLowerCase() === 'amr' ? 'ArrayOfString' : 'String'
+  }
+
   throw new Error(`Condition key ${contextKey} not found`)
 }
 
@@ -156,11 +176,11 @@ export async function typeForContextKey(contextKey: string): Promise<ConditionKe
  * @param key the key to check
  * @returns true if the key is a valid OIDC condition key
  */
-function isOidcConditionKey(key: string): boolean {
+export function isOidcConditionKey(key: string): boolean {
   const parts = key.split(':')
   if (parts.length !== 2) {
     return false
   }
   const [service, action] = parts
-  return oidcKeys.has(action) && oidcProviderPattern.test(service)
+  return oidcKeys.has(action.toLowerCase()) && oidcProviderPattern.test(service)
 }

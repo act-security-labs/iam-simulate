@@ -1,5 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { isActualContextKey, normalizeContextKeyCase, typeForContextKey } from './contextKeys.js'
+import {
+  isActualContextKey,
+  normalizeContextKeyCase,
+  typeForContextKey,
+  variableIndexInContextKey
+} from './contextKeys.js'
+
+describe('variableIndexInContextKey', () => {
+  it.each([
+    ['kms:EncryptionContext:${EncryptionContextKey}', 'kms:EncryptionContext:'.length],
+    ['aws:PrincipalTag/tag-key', 'aws:PrincipalTag/'.length],
+    ['token.actions.${Domain}.ghe.com:actor', -1],
+    ['aws:SourceAccount', -1]
+  ])('finds the variable start in %s', (key, expected) => {
+    //Given a condition key specification
+    //When locating its variable portion
+    const result = variableIndexInContextKey(key)
+    //Then the index identifies the variable or indicates there is none
+    expect(result).toBe(expected)
+  })
+})
 
 describe('isActualContextKey', () => {
   it('should return true for a global context key', async () => {

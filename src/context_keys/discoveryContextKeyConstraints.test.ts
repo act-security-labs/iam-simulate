@@ -5,6 +5,49 @@ import {
 } from './discoveryContextKeyConstraints.js'
 
 describe('DiscoveryContextKeyConstraints', () => {
+  it('treats unsupported keys as absent without overriding caller constraints', () => {
+    //Given a request with unsupported keys and an explicit unknown constraint
+    const constraints = new DiscoveryContextKeyConstraints(
+      [{ keyName: 'kms:ViaService', presenceIsKnown: false, valueIsKnown: false }],
+      () => true
+    )
+
+    //When looking up configured and unconfigured keys
+    const configured = constraints.constraintFor('kms:ViaService')
+    const absent = constraints.constraintFor('kms:Other')
+
+    //Then the caller constraint wins and the other key is known absent
+    expect(configured).toEqual({
+      presenceIsKnown: false,
+      valueIsKnown: false,
+      explicitlyConfigured: true
+    })
+    expect(absent).toEqual({
+      presenceIsKnown: true,
+      valueIsKnown: true,
+      explicitlyConfigured: true
+    })
+  })
+
+  it('keeps request-specific unsupported key results isolated', () => {
+    //Given requests with different supported keys
+    const unsupported = new DiscoveryContextKeyConstraints([], () => true)
+    const supported = new DiscoveryContextKeyConstraints([], () => false)
+
+    //When both requests resolve the same key
+    const absent = unsupported.constraintFor('kms:ViaService')
+    const unknown = supported.constraintFor('kms:ViaService')
+
+    //Then each request retains its own cached result
+    expect(absent.presenceIsKnown).toBe(true)
+    expect(unknown).toEqual({
+      presenceIsKnown: false,
+      valueIsKnown: false,
+      explicitlyConfigured: false
+    })
+    expect(unsupported.constraintFor('kms:ViaService')).toBe(absent)
+  })
+
   it('should return unconstrained for unknown keys', () => {
     //Given constraints for a different key
     const constraints = new DiscoveryContextKeyConstraints([

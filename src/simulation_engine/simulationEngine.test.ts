@@ -140,7 +140,13 @@ vi.mocked(iamActionExists).mockImplementation(async (service, action) => {
 })
 
 vi.mocked(getAllGlobalConditionKeys).mockImplementation(() => {
-  return ['aws:userid', 'aws:username', 'aws:PrincipalOrgPaths', 'aws:RequestTag/tag-key']
+  return [
+    'aws:userid',
+    'aws:username',
+    'aws:PrincipalOrgPaths',
+    'aws:RequestTag/tag-key',
+    'aws:SourceVpc'
+  ]
 })
 
 vi.mocked(getGlobalConditionKeyByPrefix).mockImplementation((key) => {
