@@ -1,5 +1,76 @@
 [
   {
+    "name": "Discovery rejects an Allow condition referencing an unsupported key as a policy variable",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "variable-allow",
+          "policy": {
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*",
+                "Condition": { "StringEquals": { "aws:username": "${s3:prefix}" } }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:GenerateRandom",
+        "resource": { "resource": "*", "accountId": "123456789012" },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": { "aws:username": "alice", "s3:prefix": "alice" }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        { "keyName": "aws:username", "presenceIsKnown": true, "valueIsKnown": true }
+      ]
+    },
+    "expected": { "resultType": "single", "overallResult": "ImplicitlyDenied", "results": [{}] }
+  },
+  {
+    "name": "Discovery does not apply a Deny condition referencing an absent unsupported policy variable",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "variable-deny",
+          "policy": {
+            "Statement": [
+              { "Effect": "Allow", "Action": "kms:GenerateRandom", "Resource": "*" },
+              {
+                "Effect": "Deny",
+                "Action": "kms:GenerateRandom",
+                "Resource": "*",
+                "Condition": { "StringEquals": { "aws:username": "${s3:prefix}" } }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "request": {
+        "action": "kms:GenerateRandom",
+        "resource": { "resource": "*", "accountId": "123456789012" },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": { "aws:username": "alice" }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery",
+      "discoveryContextKeyConstraints": [
+        { "keyName": "aws:username", "presenceIsKnown": true, "valueIsKnown": true }
+      ]
+    },
+    "expected": { "resultType": "single", "overallResult": "Allowed", "results": [{}] }
+  },
+  {
     "name": "single resource ignores Allow condition with known presence and unknown value",
     "simulation": {
       "identityPolicies": [
