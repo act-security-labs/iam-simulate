@@ -1,3 +1,10 @@
+## [0.1.205](https://github.com/act-security-labs/iam-simulate/compare/v0.1.204...v0.1.205) (2026-11-13)
+
+
+### Bug Fixes
+
+* treat context keys an action cannot carry as absent in Discovery mode ([#223](https://github.com/act-security-labs/iam-simulate/issues/223)) ([c9d43aa](https://github.com/act-security-labs/iam-simulate/commit/c9d43aac5186ebaf3fc602f4419d4391857f60c2))
+
 ## [0.1.204](https://github.com/act-security-labs/iam-simulate/compare/v0.1.203...v0.1.204) (2026-11-12)
 
 
