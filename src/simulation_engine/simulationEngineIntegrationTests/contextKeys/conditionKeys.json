@@ -96,7 +96,7 @@
     }
   },
   {
-    "name": "a supplied value fills a templated condition key: kms:EncryptionContext on kms:Encrypt",
+    "name": "a supplied KMS encryption context key matches its iam-data template",
     "simulation": {
       "identityPolicies": [],
       "serviceControlPolicies": [],

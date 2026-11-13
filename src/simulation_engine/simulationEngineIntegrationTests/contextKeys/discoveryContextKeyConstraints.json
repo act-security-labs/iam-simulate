@@ -757,6 +757,70 @@
     }
   },
   {
+    "name": "Discovery keeps S3 tag conditions unknown when bucket ABAC is enabled",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "allow-team",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/team": "blue"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "additionalSettings": {
+        "s3": { "bucketAbacEnabled": true }
+      },
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object.txt",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Discovery"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "conditions": {
+            "conditionType": "condition",
+            "op": "StringEquals",
+            "key": "aws:ResourceTag/team",
+            "values": ["blue"],
+            "sources": [
+              {
+                "effect": "Allow",
+                "policyIdentifier": "allow-team",
+                "policyType": "identity",
+                "statementIndex": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
     "name": "Discovery treats S3 tag keys as absent when bucket ABAC is unspecified",
     "simulation": {
       "identityPolicies": [
