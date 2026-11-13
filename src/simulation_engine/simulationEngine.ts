@@ -14,7 +14,12 @@ import {
   validateServiceControlPolicy,
   type ValidationError
 } from '@actsecurity/iam-policy'
-import { isAssumedRoleArn, isFederatedUserArn, isIamRoleArn, normalizeCaseInsensitive } from '@actsecurity/iam-utils'
+import {
+  isAssumedRoleArn,
+  isFederatedUserArn,
+  isIamRoleArn,
+  normalizeCaseInsensitive
+} from '@actsecurity/iam-utils'
 import { mergeAllowedConditionExpressions } from '../analysis/allowedConditions.js'
 import { isConditionKeyArray } from '../context_keys/contextKeyTypes.js'
 import {
