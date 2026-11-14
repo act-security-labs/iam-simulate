@@ -1,0 +1,258 @@
+[
+  {
+    "name": "reserved role PassRole retains boundary analysis without guardrail attribution",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::123456789012:role/caller",
+        "action": "iam:PassRole",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Example_123",
+          "accountId": "123456789012"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "Grant",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "permissionBoundaryPolicies": [
+        {
+          "name": "Boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": []
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}],
+      "analysis": {
+        "blockedBy": null,
+        "identityResult": "Allowed",
+        "permissionBoundaryResult": "ImplicitlyDenied",
+        "denials": [{ "policyType": "pb", "denialType": "Implicit" }]
+      }
+    }
+  },
+  {
+    "name": "ordinary role PassRole reports its blocking boundary",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::123456789012:role/caller",
+        "action": "iam:PassRole",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/application",
+          "accountId": "123456789012"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "Grant",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "permissionBoundaryPolicies": [
+        {
+          "name": "Boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": []
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}],
+      "analysis": {
+        "blockedBy": ["pb"],
+        "identityResult": "Allowed",
+        "permissionBoundaryResult": "ImplicitlyDenied",
+        "denials": [{ "policyType": "pb", "denialType": "Implicit", "blocking": true }]
+      }
+    }
+  },
+  {
+    "name": "AWS managed policy DeletePolicy does not attribute service denial to boundary",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::123456789012:role/caller",
+        "action": "iam:DeletePolicy",
+        "resource": { "resource": "arn:aws:iam::aws:policy/Example", "accountId": "123456789012" },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "Grant",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:DeletePolicy", "Resource": "*" }]
+          }
+        }
+      ],
+      "permissionBoundaryPolicies": [
+        {
+          "name": "Boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": []
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}],
+      "analysis": {
+        "blockedBy": null,
+        "identityResult": "Allowed",
+        "permissionBoundaryResult": "ImplicitlyDenied",
+        "denials": [{ "policyType": "pb", "denialType": "Implicit" }]
+      }
+    }
+  },
+  {
+    "name": "customer managed policy DeletePolicy reports its blocking boundary",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::123456789012:role/caller",
+        "action": "iam:DeletePolicy",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:policy/Example",
+          "accountId": "123456789012"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "Grant",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:DeletePolicy", "Resource": "*" }]
+          }
+        }
+      ],
+      "permissionBoundaryPolicies": [
+        {
+          "name": "Boundary",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": []
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}],
+      "analysis": {
+        "blockedBy": ["pb"],
+        "identityResult": "Allowed",
+        "permissionBoundaryResult": "ImplicitlyDenied",
+        "denials": [{ "policyType": "pb", "denialType": "Implicit", "blocking": true }]
+      }
+    }
+  },
+  {
+    "name": "reserved role PassRole retains explicit SCP analysis without guardrail attribution",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::123456789012:role/caller",
+        "action": "iam:PassRole",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Example_123",
+          "accountId": "123456789012"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "Grant",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [
+        {
+          "orgIdentifier": "ou-example",
+          "policies": [
+            {
+              "name": "SCP",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [{ "Effect": "Deny", "Action": "iam:PassRole", "Resource": "*" }]
+              }
+            }
+          ]
+        }
+      ],
+      "resourceControlPolicies": []
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}],
+      "analysis": {
+        "blockedBy": null,
+        "identityResult": "Allowed",
+        "scpResult": "ExplicitlyDenied"
+      }
+    }
+  },
+  {
+    "name": "reserved role PassRole with no guardrail remains service denied",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::123456789012:role/caller",
+        "action": "iam:PassRole",
+        "resource": {
+          "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Example_123",
+          "accountId": "123456789012"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "Grant",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": []
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [{}],
+      "analysis": { "blockedBy": null, "identityResult": "Allowed" }
+    }
+  }
+]

@@ -49,6 +49,8 @@ export class IamServiceAuthorizer extends DefaultServiceAuthorizer {
       return {
         ...baseResult,
         result: 'ImplicitlyDenied',
+        // Removing policy guardrails cannot make a service-blocked request succeed.
+        blockedBy: undefined,
         conditions: undefined
       }
     }
@@ -62,6 +64,8 @@ export class IamServiceAuthorizer extends DefaultServiceAuthorizer {
       return {
         ...baseResult,
         result: 'ImplicitlyDenied',
+        // Keep policy analyses for inspection without attributing the block to them.
+        blockedBy: undefined,
         conditions: undefined
       }
     }

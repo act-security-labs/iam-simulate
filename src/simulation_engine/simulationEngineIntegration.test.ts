@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'fs'
 import { join, resolve } from 'path'
 import { describe, expect, it } from 'vitest'
-import type { EvaluationResult } from '../evaluate.js'
+import { getDenialReasons, type RequestDenial } from '../analysis/analyzeResults.js'
+import type { BlockedReason, EvaluationResult } from '../evaluate.js'
 import type { Simulation } from './simulation.js'
 import { runSimulation, type SimulationResultType } from './simulationEngine.js'
 import type { SimulationOptions } from './simulationOptions.js'
@@ -22,6 +23,13 @@ interface IntegrationTestCase {
     resultType: SimulationResultType
     results: ExpectedResult[]
     overallResult?: EvaluationResult
+    analysis?: {
+      blockedBy: BlockedReason[] | null
+      identityResult?: string
+      permissionBoundaryResult?: string
+      scpResult?: string
+      denials?: RequestDenial[]
+    }
   }
 }
 
@@ -78,6 +86,25 @@ describe('simulationEngineIntegration', () => {
           }
 
           if (response.resultType === 'single') {
+            const expectedAnalysis = testCase.expected.analysis
+            if (expectedAnalysis) {
+              const analysis = response.result.analysis
+              expect(analysis.blockedBy ?? null).toEqual(expectedAnalysis.blockedBy)
+              if (expectedAnalysis.identityResult !== undefined) {
+                expect(analysis.identityAnalysis?.result).toEqual(expectedAnalysis.identityResult)
+              }
+              if (expectedAnalysis.permissionBoundaryResult !== undefined) {
+                expect(analysis.permissionBoundaryAnalysis?.result).toEqual(
+                  expectedAnalysis.permissionBoundaryResult
+                )
+              }
+              if (expectedAnalysis.scpResult !== undefined) {
+                expect(analysis.scpAnalysis?.result).toEqual(expectedAnalysis.scpResult)
+              }
+              if (expectedAnalysis.denials !== undefined) {
+                expect(getDenialReasons(analysis)).toEqual(expectedAnalysis.denials)
+              }
+            }
             if (testCase.expected.results[0]?.resourceType !== undefined) {
               expect(response.result.resourceType).toBe(testCase.expected.results[0].resourceType)
             }

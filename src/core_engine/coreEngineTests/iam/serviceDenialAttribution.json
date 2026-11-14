@@ -1,0 +1,129 @@
+[
+  {
+    "name": "reserved role PassRole retains boundary analysis but not a guardrail blocker",
+    "request": {
+      "principal": "arn:aws:iam::123456789012:role/caller",
+      "action": "iam:PassRole",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Example_123",
+        "accountId": "123456789012"
+      },
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+      }
+    ],
+    "permissionBoundaries": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+      }
+    ],
+    "expected": { "response": "ImplicitlyDenied", "identityResult": "Allowed" }
+  },
+  {
+    "name": "ordinary role PassRole still reports its boundary blocker",
+    "request": {
+      "principal": "arn:aws:iam::123456789012:role/caller",
+      "action": "iam:PassRole",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/application",
+        "accountId": "123456789012"
+      },
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+      }
+    ],
+    "permissionBoundaries": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+      }
+    ],
+    "expected": { "response": "ImplicitlyDenied", "identityResult": "Allowed", "blockedBy": ["pb"] }
+  },
+  {
+    "name": "AWS-managed policy DeletePolicy does not report boundary as blocker",
+    "request": {
+      "principal": "arn:aws:iam::123456789012:role/caller",
+      "action": "iam:DeletePolicy",
+      "resource": { "resource": "arn:aws:iam::aws:policy/Example", "accountId": "123456789012" },
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:DeletePolicy", "Resource": "*" }]
+      }
+    ],
+    "permissionBoundaries": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+      }
+    ],
+    "expected": { "response": "ImplicitlyDenied", "identityResult": "Allowed" }
+  },
+  {
+    "name": "customer-managed policy DeletePolicy still reports its boundary blocker",
+    "request": {
+      "principal": "arn:aws:iam::123456789012:role/caller",
+      "action": "iam:DeletePolicy",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:policy/Example",
+        "accountId": "123456789012"
+      },
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:DeletePolicy", "Resource": "*" }]
+      }
+    ],
+    "permissionBoundaries": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:GetRole", "Resource": "*" }]
+      }
+    ],
+    "expected": { "response": "ImplicitlyDenied", "identityResult": "Allowed", "blockedBy": ["pb"] }
+  },
+  {
+    "name": "reserved role PassRole does not attribute service denial to SCP",
+    "request": {
+      "principal": "arn:aws:iam::123456789012:role/caller",
+      "action": "iam:PassRole",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_Example_123",
+        "accountId": "123456789012"
+      },
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Action": "iam:PassRole", "Resource": "*" }]
+      }
+    ],
+    "serviceControlPolicies": [
+      {
+        "orgIdentifier": "ou-example",
+        "policies": [
+          {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Deny", "Action": "iam:PassRole", "Resource": "*" }]
+          }
+        ]
+      }
+    ],
+    "expected": { "response": "ImplicitlyDenied", "identityResult": "Allowed" }
+  }
+]
