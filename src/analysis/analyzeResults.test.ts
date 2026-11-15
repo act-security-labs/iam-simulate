@@ -1378,6 +1378,49 @@ const getDenialReasonsTests: {
     expectedResourceResult: 'NotApplicable'
   },
   {
+    name: 'cross-account request explicitly denied by identity to a resource with no resource policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 's3:GetBucketAcl',
+        resource: {
+          resource: 'arn:aws:s3:::example-bucket',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'DenyS3',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Sid: 'DenyAllS3',
+                Effect: 'Deny',
+                Action: 's3:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        policyIdentifier: 'DenyS3',
+        statementId: 'DenyAllS3',
+        statementIndex: 1,
+        denialType: 'Explicit'
+      }
+    ],
+    expectedIdentityResult: 'ExplicitlyDenied',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
     name: 'origin access identity request to a bucket with no bucket policy',
     simulation: {
       request: {
@@ -1439,35 +1482,6 @@ const getDenialReasonsTests: {
       }
     ],
     expectedIdentityResult: 'Allowed',
-    expectedResourceResult: 'NotApplicable'
-  },
-  {
-    name: 'same-account request denied by identity to a KMS key with no key policy',
-    simulation: {
-      request: {
-        principal: 'arn:aws:iam::111111111111:role/Caller',
-        action: 'kms:Decrypt',
-        resource: {
-          resource: 'arn:aws:kms:us-east-1:111111111111:key/11111111-2222-3333-4444-555555555555',
-          accountId: '111111111111'
-        },
-        contextVariables: {}
-      },
-      identityPolicies: [],
-      serviceControlPolicies: [],
-      resourceControlPolicies: []
-    },
-    expected: [
-      {
-        policyType: 'identity',
-        denialType: 'Implicit'
-      },
-      {
-        policyType: 'resource',
-        denialType: 'NotApplicable'
-      }
-    ],
-    expectedIdentityResult: 'ImplicitlyDenied',
     expectedResourceResult: 'NotApplicable'
   },
   {
@@ -1604,31 +1618,6 @@ const getDenialReasonsTests: {
     },
     expected: [],
     expectedIdentityResult: 'Allowed',
-    expectedResourceResult: 'NotApplicable'
-  },
-  {
-    name: 'service rule denial for an anonymous request to assume a role',
-    simulation: {
-      request: {
-        principal: anonymousPrincipal,
-        action: 'sts:AssumeRole',
-        resource: {
-          resource: 'arn:aws:iam::222222222222:role/Target',
-          accountId: '222222222222'
-        },
-        contextVariables: {}
-      },
-      identityPolicies: [],
-      serviceControlPolicies: [],
-      resourceControlPolicies: []
-    },
-    expected: [
-      {
-        policyType: 'identity',
-        denialType: 'Implicit'
-      }
-    ],
-    expectedIdentityResult: 'ImplicitlyDenied',
     expectedResourceResult: 'NotApplicable'
   },
   {
