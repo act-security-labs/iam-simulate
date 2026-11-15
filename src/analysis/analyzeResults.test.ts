@@ -5,7 +5,7 @@ import type {
   RequestAnalysis,
   ResourceEvaluationResult
 } from '../evaluate.js'
-import type { Simulation } from '../simulation_engine/simulation.js'
+import { anonymousPrincipal, type Simulation } from '../simulation_engine/simulation.js'
 import { runSimulation } from '../simulation_engine/simulationEngine.js'
 import {
   getDenialReasons,
@@ -1255,6 +1255,119 @@ const getDenialReasonsTests: {
         denialType: 'Implicit'
       }
     ]
+  },
+  // Missing resource policy tests
+  {
+    name: 'cross-account request allowed by identity to a resource with no resource policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 's3:GetBucketAcl',
+        resource: {
+          resource: 'arn:aws:s3:::example-bucket',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowS3',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: 's3:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'resource',
+        denialType: 'NotApplicable'
+      }
+    ],
+    expectedIdentityResult: 'Allowed',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'same-account request to a resource with no resource policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 's3:GetBucketAcl',
+        resource: {
+          resource: 'arn:aws:s3:::example-bucket',
+          accountId: '111111111111'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      }
+    ],
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'anonymous request to a resource with no resource policy',
+    simulation: {
+      request: {
+        principal: anonymousPrincipal,
+        action: 's3:GetBucketAcl',
+        resource: {
+          resource: 'arn:aws:s3:::example-bucket',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      }
+    ],
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'cross-account request denied by identity to a resource with no resource policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 's3:GetBucketAcl',
+        resource: {
+          resource: 'arn:aws:s3:::example-bucket',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      }
+    ],
+    expectedIdentityResult: 'ImplicitlyDenied',
+    expectedResourceResult: 'NotApplicable'
   }
 ]
 
