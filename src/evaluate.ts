@@ -182,6 +182,16 @@ export interface RequestAnalysis {
   sameAccount: boolean
 
   /**
+   * Set when the request can only be allowed with an Allow from the resource policy, because the
+   * service does not implicitly trust the identity policies of the principal's account. This is the
+   * case for cross-account and anonymous requests, principals without identity policies, and
+   * resources such as KMS keys whose policy must delegate to IAM.
+   *
+   * Left unset when a service rule decides the request, since no policy can allow it.
+   */
+  resourceAllowRequired?: true
+
+  /**
    * The result of the evaluation of the session policy, if any.
    */
   sessionAnalysis?: IdentityAnalysis | undefined

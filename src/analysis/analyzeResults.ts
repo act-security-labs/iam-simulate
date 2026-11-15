@@ -95,7 +95,7 @@ export type RequestDenial =
 
       /**
        * The type of denial. The policy type gave no Allow because no policy of that type exists,
-       * for example a cross-account request to a resource that has no resource policy.
+       * for example a request that needs a resource policy Allow on a resource that has none.
        */
       denialType: 'NotApplicable'
     }
@@ -135,8 +135,8 @@ export type RequestGrant =
  * - the statement index (1-based) of the denying statement
  *
  * For a policy type that gave no Allow because no such policy exists, it returns the policy type
- * with a `NotApplicable` denial type. This is reported for a cross-account request whose identity
- * policies allow it, on a resource that has no resource policy.
+ * with a `NotApplicable` denial type. This is reported when the request needed an Allow from the
+ * resource policy and the resource has no resource policy.
  *
  * @param requestAnalysis the request analysis
  * @returns a list of RequestDenial objects describing the reasons for denial
@@ -225,11 +225,8 @@ function addSimplePolicyDenials(
 }
 
 /**
- * Adds a resource denial for a cross-account request that the identity policies allow but that is
- * denied because the resource has no resource policy to allow it.
- *
- * Requiring the identity policies to allow the request excludes anonymous requests, which never
- * have an allowing identity analysis.
+ * Adds a resource denial for a request that needed an Allow from the resource policy, on a resource
+ * that has no resource policy.
  */
 function addMissingResourcePolicyDenial(
   requestAnalysis: RequestAnalysis,
@@ -237,9 +234,8 @@ function addMissingResourcePolicyDenial(
 ): void {
   if (
     requestAnalysis.result === 'ImplicitlyDenied' &&
-    !requestAnalysis.sameAccount &&
-    requestAnalysis.resourceAnalysis?.result === 'NotApplicable' &&
-    isAllowedByIdentityPolicies(requestAnalysis)
+    requestAnalysis.resourceAllowRequired &&
+    requestAnalysis.resourceAnalysis?.result === 'NotApplicable'
   ) {
     denials.push({ policyType: 'resource', denialType: 'NotApplicable' })
   }

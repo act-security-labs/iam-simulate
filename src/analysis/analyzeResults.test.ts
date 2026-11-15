@@ -1340,6 +1340,10 @@ const getDenialReasonsTests: {
       {
         policyType: 'identity',
         denialType: 'Implicit'
+      },
+      {
+        policyType: 'resource',
+        denialType: 'NotApplicable'
       }
     ],
     expectedResourceResult: 'NotApplicable'
@@ -1352,6 +1356,289 @@ const getDenialReasonsTests: {
         action: 's3:GetBucketAcl',
         resource: {
           resource: 'arn:aws:s3:::example-bucket',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      },
+      {
+        policyType: 'resource',
+        denialType: 'NotApplicable'
+      }
+    ],
+    expectedIdentityResult: 'ImplicitlyDenied',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'origin access identity request to a bucket with no bucket policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E1EXAMPLE12345',
+        action: 's3:GetObject',
+        resource: {
+          resource: 'arn:aws:s3:::example-bucket/object.txt',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'resource',
+        denialType: 'NotApplicable'
+      }
+    ],
+    expectedIdentityResult: 'NotApplicable',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'same-account request allowed by identity to a KMS key with no key policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 'kms:Decrypt',
+        resource: {
+          resource: 'arn:aws:kms:us-east-1:111111111111:key/11111111-2222-3333-4444-555555555555',
+          accountId: '111111111111'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowKms',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: 'kms:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'resource',
+        denialType: 'NotApplicable'
+      }
+    ],
+    expectedIdentityResult: 'Allowed',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'same-account request denied by identity to a KMS key with no key policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 'kms:Decrypt',
+        resource: {
+          resource: 'arn:aws:kms:us-east-1:111111111111:key/11111111-2222-3333-4444-555555555555',
+          accountId: '111111111111'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      },
+      {
+        policyType: 'resource',
+        denialType: 'NotApplicable'
+      }
+    ],
+    expectedIdentityResult: 'ImplicitlyDenied',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'service rule denial for a write to an AWS managed policy',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 'iam:CreatePolicyVersion',
+        resource: {
+          resource: 'arn:aws:iam::aws:policy/ReadOnlyAccess',
+          accountId: 'aws'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowIam',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: 'iam:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [],
+    expectedIdentityResult: 'Allowed',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'service rule denial for a write to an AWS reserved role in another account',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 'iam:PutRolePolicy',
+        resource: {
+          resource: 'arn:aws:iam::222222222222:role/aws-reserved/sso.amazonaws.com/ExampleRole',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowIam',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: 'iam:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [],
+    expectedIdentityResult: 'Allowed',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'service rule denial for a write to an AWS managed KMS alias in another account',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:role/Caller',
+        action: 'kms:UpdateAlias',
+        resource: {
+          resource: 'arn:aws:kms:us-east-1:222222222222:alias/aws/s3',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowKms',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: 'kms:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [],
+    expectedIdentityResult: 'Allowed',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'service rule denial for a root user assuming a role in another account',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::111111111111:root',
+        action: 'sts:AssumeRole',
+        resource: {
+          resource: 'arn:aws:iam::222222222222:role/Target',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowSts',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: 'sts:*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [],
+    expectedIdentityResult: 'Allowed',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'service rule denial for an anonymous request to assume a role',
+    simulation: {
+      request: {
+        principal: anonymousPrincipal,
+        action: 'sts:AssumeRole',
+        resource: {
+          resource: 'arn:aws:iam::222222222222:role/Target',
+          accountId: '222222222222'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      }
+    ],
+    expectedIdentityResult: 'ImplicitlyDenied',
+    expectedResourceResult: 'NotApplicable'
+  },
+  {
+    name: 'service rule denial for an anonymous request to a wildcard-only action',
+    simulation: {
+      request: {
+        principal: anonymousPrincipal,
+        action: 's3:ListAllMyBuckets',
+        resource: {
+          resource: '*',
           accountId: '222222222222'
         },
         contextVariables: {}

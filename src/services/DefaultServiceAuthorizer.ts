@@ -138,6 +138,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
     const baseResult: Pick<
       RequestAnalysis,
       | 'sameAccount'
+      | 'resourceAllowRequired'
       | 'scpAnalysis'
       | 'rcpAnalysis'
       | 'resourceAnalysis'
@@ -155,6 +156,15 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
       resourceAnalysis: request.resourceAnalysis,
       permissionBoundaryAnalysis: request.permissionBoundaryAnalysis,
       endpointAnalysis: request.endpointAnalysis
+    }
+
+    const principalAccountTrust = this.serviceTrustsPrincipalAccount(
+      sameAccount,
+      request.resourceAnalysis,
+      request.request.resource
+    )
+    if (principalAccountTrust.trustType !== 'Implicit') {
+      baseResult.resourceAllowRequired = true
     }
 
     if (requestPrincipal.isAnonymous()) {
@@ -229,6 +239,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
     baseResult: Pick<
       RequestAnalysis,
       | 'sameAccount'
+      | 'resourceAllowRequired'
       | 'scpAnalysis'
       | 'rcpAnalysis'
       | 'resourceAnalysis'
@@ -245,6 +256,7 @@ export class DefaultServiceAuthorizer implements ServiceAuthorizer {
         result: 'ImplicitlyDenied',
         ...baseResult,
         sameAccount: false,
+        resourceAllowRequired: undefined,
         conditions: undefined
       }
     }
