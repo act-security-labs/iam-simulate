@@ -86,7 +86,7 @@ export type RequestDenial =
       /**
        * The type of policy that gave no Allow.
        */
-      policyType: DenialPolicyType
+      policyType: 'resource'
 
       /**
        * This denial blocks a request that otherwise could have been allowed.
