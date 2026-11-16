@@ -163,6 +163,80 @@ const getDenialReasonsTests: {
       }
     ]
   },
+  // IAM reserved role service rule tests
+  {
+    name: 'owning service-linked role denied by its own policy on a reserved role',
+    simulation: {
+      request: {
+        principal:
+          'arn:aws:iam::123456789012:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO',
+        action: 'iam:TagRole',
+        resource: {
+          resource:
+            'arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_9999999999',
+          accountId: '123456789012'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'RoleCleanupOnly',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Sid: 'IAMRoleCleanupActions',
+                Effect: 'Allow',
+                Action: ['iam:DeleteRole', 'iam:DeleteRolePolicy', 'iam:DetachRolePolicy'],
+                Resource: ['arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*']
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: [
+      {
+        policyType: 'identity',
+        denialType: 'Implicit'
+      }
+    ]
+  },
+  {
+    name: 'reserved role service denial for a principal that is not the owning service-linked role',
+    simulation: {
+      request: {
+        principal: 'arn:aws:iam::123456789012:role/Admin',
+        action: 'iam:PutRolePolicy',
+        resource: {
+          resource:
+            'arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_9999999999',
+          accountId: '123456789012'
+        },
+        contextVariables: {}
+      },
+      identityPolicies: [
+        {
+          name: 'AllowAll',
+          policy: {
+            Version: '2012-10-17',
+            Statement: [
+              {
+                Effect: 'Allow',
+                Action: '*',
+                Resource: '*'
+              }
+            ]
+          }
+        }
+      ],
+      serviceControlPolicies: [],
+      resourceControlPolicies: []
+    },
+    expected: []
+  },
   // Resource policy tests
   {
     name: 'service principal denial from non-matching resource policy',
