@@ -58,6 +58,7 @@ export class KmsServiceAuthorizer extends DefaultServiceAuthorizer {
       return {
         ...baseResult,
         result: 'ImplicitlyDenied',
+        resourceAllowRequired: undefined,
         conditions: undefined
       }
     }

@@ -38,6 +38,7 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
       return {
         ...baseResult,
         result: 'ImplicitlyDenied',
+        resourceAllowRequired: undefined,
         conditions: undefined
       }
     }
@@ -51,6 +52,7 @@ export class StsServiceAuthorizer extends DefaultServiceAuthorizer {
       return {
         ...baseResult,
         result: 'ImplicitlyDenied',
+        resourceAllowRequired: undefined,
         conditions: undefined
       }
     }
