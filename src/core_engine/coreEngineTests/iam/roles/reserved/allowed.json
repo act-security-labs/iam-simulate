@@ -295,5 +295,167 @@
     "expected": {
       "response": "Allowed"
     }
+  },
+  {
+    "name": "allow iam:PutRolePolicy for the service-linked role of the service that owns the reserved role",
+    "request": {
+      "action": "iam:PutRolePolicy",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_9999999999",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "IAMRoleProvisioningActions",
+            "Effect": "Allow",
+            "Action": [
+              "iam:AttachRolePolicy",
+              "iam:CreateRole",
+              "iam:PutRolePolicy",
+              "iam:UpdateRole",
+              "iam:UpdateRoleDescription",
+              "iam:UpdateAssumeRolePolicy",
+              "iam:PutRolePermissionsBoundary",
+              "iam:DeleteRolePermissionsBoundary"
+            ],
+            "Resource": ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"],
+            "Condition": {
+              "StringNotEquals": {
+                "aws:PrincipalOrgMasterAccountId": "${aws:PrincipalAccount}"
+              }
+            }
+          },
+          {
+            "Sid": "IAMRoleCleanupActions",
+            "Effect": "Allow",
+            "Action": [
+              "iam:DeleteRole",
+              "iam:DeleteRolePolicy",
+              "iam:DetachRolePolicy",
+              "iam:ListRolePolicies",
+              "iam:ListAttachedRolePolicies"
+            ],
+            "Resource": ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "allow iam:DeleteRolePolicy for the service-linked role of the service that owns the reserved role",
+    "request": {
+      "action": "iam:DeleteRolePolicy",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/AWSReservedSSO_AdministratorAccess_9999999999",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "IAMRoleProvisioningActions",
+            "Effect": "Allow",
+            "Action": [
+              "iam:AttachRolePolicy",
+              "iam:CreateRole",
+              "iam:PutRolePolicy",
+              "iam:UpdateRole",
+              "iam:UpdateRoleDescription",
+              "iam:UpdateAssumeRolePolicy",
+              "iam:PutRolePermissionsBoundary",
+              "iam:DeleteRolePermissionsBoundary"
+            ],
+            "Resource": ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"],
+            "Condition": {
+              "StringNotEquals": {
+                "aws:PrincipalOrgMasterAccountId": "${aws:PrincipalAccount}"
+              }
+            }
+          },
+          {
+            "Sid": "IAMRoleCleanupActions",
+            "Effect": "Allow",
+            "Action": [
+              "iam:DeleteRole",
+              "iam:DeleteRolePolicy",
+              "iam:DetachRolePolicy",
+              "iam:ListRolePolicies",
+              "iam:ListAttachedRolePolicies"
+            ],
+            "Resource": ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
+  },
+  {
+    "name": "allow iam:PutRolePolicy for the owning service-linked role on a reserved role with a region path",
+    "request": {
+      "action": "iam:PutRolePolicy",
+      "resource": {
+        "resource": "arn:aws:iam::123456789012:role/aws-reserved/sso.amazonaws.com/eu-west-1/AWSReservedSSO_AdministratorAccess_9999999999",
+        "accountId": "123456789012"
+      },
+      "principal": "arn:aws:iam::123456789012:role/aws-service-role/sso.amazonaws.com/AWSServiceRoleForSSO",
+      "context": {}
+    },
+    "identityPolicies": [
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "IAMRoleProvisioningActions",
+            "Effect": "Allow",
+            "Action": [
+              "iam:AttachRolePolicy",
+              "iam:CreateRole",
+              "iam:PutRolePolicy",
+              "iam:UpdateRole",
+              "iam:UpdateRoleDescription",
+              "iam:UpdateAssumeRolePolicy",
+              "iam:PutRolePermissionsBoundary",
+              "iam:DeleteRolePermissionsBoundary"
+            ],
+            "Resource": ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"],
+            "Condition": {
+              "StringNotEquals": {
+                "aws:PrincipalOrgMasterAccountId": "${aws:PrincipalAccount}"
+              }
+            }
+          },
+          {
+            "Sid": "IAMRoleCleanupActions",
+            "Effect": "Allow",
+            "Action": [
+              "iam:DeleteRole",
+              "iam:DeleteRolePolicy",
+              "iam:DetachRolePolicy",
+              "iam:ListRolePolicies",
+              "iam:ListAttachedRolePolicies"
+            ],
+            "Resource": ["arn:aws:iam::*:role/aws-reserved/sso.amazonaws.com/*"]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "Allowed"
+    }
   }
 ]
