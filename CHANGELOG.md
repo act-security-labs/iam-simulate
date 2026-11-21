@@ -1,3 +1,5 @@
+## [0.1.208](https://github.com/act-security-labs/iam-simulate/compare/v0.1.207...v0.1.208) (2026-11-21)
+
 ## [0.1.207](https://github.com/act-security-labs/iam-simulate/compare/v0.1.206...v0.1.207) (2026-11-14)
 
 
