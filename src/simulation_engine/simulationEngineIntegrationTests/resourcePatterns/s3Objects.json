@@ -101,5 +101,46 @@
       "overallResult": "ExplicitlyDenied",
       "resultType": "wildcard"
     }
+  },
+  {
+    "name": "concrete object key containing / and : resolves to the object type",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::examplebucket/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::examplebucket/reports/2024:q1/summary.txt",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "results": [
+        {
+          "resourceType": "object"
+        }
+      ],
+      "overallResult": "Allowed"
+    }
   }
 ]

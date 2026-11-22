@@ -110,5 +110,169 @@
       "overallResult": "Allowed",
       "resultType": "wildcard"
     }
+  },
+  {
+    "name": "s3 TagResource concrete grant ARN resolves to accessgrant, not the grants instance",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:TagResource",
+                "Resource": "arn:aws:s3:us-east-1:111111111111:access-grants/default/grant/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:TagResource",
+        "resource": {
+          "resource": "arn:aws:s3:us-east-1:111111111111:access-grants/default/grant/abc123",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "results": [
+        {
+          "resourceType": "accessgrant"
+        }
+      ],
+      "overallResult": "Allowed"
+    }
+  },
+  {
+    "name": "s3 TagResource concrete grants instance ARN resolves to accessgrantsinstance",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:TagResource",
+                "Resource": "arn:aws:s3:us-east-1:111111111111:access-grants/default/grant/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:TagResource",
+        "resource": {
+          "resource": "arn:aws:s3:us-east-1:111111111111:access-grants/default",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "results": [
+        {
+          "resourceType": "accessgrantsinstance"
+        }
+      ],
+      "overallResult": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "s3 TagResource grant id that looks like a location resolves to accessgrant",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:TagResource",
+                "Resource": "arn:aws:s3:us-east-1:111111111111:access-grants/default/location/*"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:TagResource",
+        "resource": {
+          "resource": "arn:aws:s3:us-east-1:111111111111:access-grants/default/grant/location/abc123",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "results": [
+        {
+          "resourceType": "accessgrant"
+        }
+      ],
+      "overallResult": "ImplicitlyDenied"
+    }
+  },
+  {
+    "name": "s3 TagResource resource type literal matches case-insensitively",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:TagResource",
+                "Resource": "arn:aws:s3:us-east-1:111111111111:ACCESS-GRANTS/default/grant/abc123"
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "s3:TagResource",
+        "resource": {
+          "resource": "arn:aws:s3:us-east-1:111111111111:ACCESS-GRANTS/default/grant/abc123",
+          "accountId": "111111111111"
+        },
+        "principal": "arn:aws:iam::111111111111:user/Alice",
+        "contextVariables": {}
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "results": [
+        {
+          "resourceType": "accessgrant"
+        }
+      ],
+      "overallResult": "Allowed"
+    }
   }
 ]
