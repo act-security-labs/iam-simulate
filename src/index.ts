@@ -45,6 +45,10 @@ export type {
 } from './explain/statementExplain.js'
 export { allowedContextKeysForRequest } from './simulation_engine/contextKeys.js'
 export {
+  configureResourceTypeMatchCache,
+  type ResourceTypeMatchCacheConfig
+} from './simulation_engine/resourceTypes.js'
+export {
   anonymousPrincipal,
   isAnonymousRequestPrincipal,
   isSimulationRequestPrincipal,

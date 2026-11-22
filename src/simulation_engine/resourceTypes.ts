@@ -1,5 +1,42 @@
 import { iamActionDetails, iamResourceTypeDetails, type ResourceType } from '@actsecurity/iam-data'
-import { mostSpecificMatchingResourceTypePatterns } from '@actsecurity/iam-utils'
+import {
+  mostSpecificMatchingResourceTypePatterns,
+  resourceStringMatchesResourceTypePattern
+} from '@actsecurity/iam-utils'
+
+/**
+ * Configuration for {@link configureResourceTypeMatchCache}.
+ */
+export interface ResourceTypeMatchCacheConfig {
+  /**
+   * The most resources whose pattern matches are remembered; the least recently used resource is
+   * dropped first.
+   */
+  maxResources: number
+}
+
+let maxResources = 4096
+/**
+ * Whether a resource matches a resource type pattern, by resource then pattern. Actions of one
+ * service share resource types, so asking about one resource for several actions repeats the same
+ * matches. Map iteration order is the recency order.
+ */
+let patternMatchesByResource = new Map<string, Map<string, boolean>>()
+
+/**
+ * Set how many resources the resource type match cache keeps for this process or worker thread,
+ * and clear it. The default is 4,096 resources.
+ *
+ * @param config the cache size
+ * @throws an error if `maxResources` is not a positive integer
+ */
+export function configureResourceTypeMatchCache(config: ResourceTypeMatchCacheConfig): void {
+  if (!Number.isInteger(config.maxResources) || config.maxResources < 1) {
+    throw new Error(`maxResources must be a positive integer, got ${config.maxResources}`)
+  }
+  maxResources = config.maxResources
+  patternMatchesByResource = new Map()
+}
 
 const qualifiedLambdaFunctionArnPattern = /^arn:[^:]+:lambda:[^:]+:[^:]+:function:[^:]+:([^:]+)$/i
 const numericQualifierPattern = /^\d+$/
@@ -29,13 +66,41 @@ export async function getResourceTypesForAction(
 
   const matchingPatterns = mostSpecificMatchingResourceTypePatterns(
     resource,
-    actionResourceTypes.map((resourceType) => resourceType.arn)
+    actionResourceTypes.map((resourceType) => resourceType.arn),
+    resourceMatchesPattern
   )
 
   const matchingTypes = actionResourceTypes.filter((resourceType) =>
     matchingPatterns.includes(resourceType.arn)
   )
   return disambiguateLambdaQualifier(service, resource, matchingTypes)
+}
+
+/**
+ * {@link resourceStringMatchesResourceTypePattern}, remembered per resource and pattern.
+ *
+ * @param resource requested resource ARN or pattern
+ * @param pattern resource type ARN pattern
+ * @returns whether the resource matches the pattern
+ */
+function resourceMatchesPattern(resource: string, pattern: string): boolean {
+  let matches = patternMatchesByResource.get(resource)
+  if (matches === undefined) {
+    matches = new Map()
+    if (patternMatchesByResource.size >= maxResources) {
+      patternMatchesByResource.delete(patternMatchesByResource.keys().next().value!)
+    }
+  } else {
+    patternMatchesByResource.delete(resource)
+  }
+  patternMatchesByResource.set(resource, matches)
+
+  let matched = matches.get(pattern)
+  if (matched === undefined) {
+    matched = resourceStringMatchesResourceTypePattern(resource, pattern)
+    matches.set(pattern, matched)
+  }
+  return matched
 }
 
 /**

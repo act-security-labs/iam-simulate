@@ -51,6 +51,57 @@
     }
   },
   {
+    "name": "Invoke: 1 with owner team",
+    "simulation": {
+      "identityPolicies": [
+        {
+          "name": "owner-policy",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "lambda:InvokeFunction",
+                "Resource": "*",
+                "Condition": {
+                  "StringEquals": {
+                    "aws:ResourceTag/Owner": "team"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [],
+      "resourcePolicy": null,
+      "request": {
+        "action": "lambda:InvokeFunction",
+        "resource": {
+          "resource": "arn:aws:lambda:us-east-1:123456789012:function:example:1",
+          "accountId": "123456789012"
+        },
+        "principal": "arn:aws:iam::123456789012:user/Alice",
+        "contextVariables": {
+          "aws:ResourceTag/Owner": "team"
+        }
+      }
+    },
+    "simulationOptions": {
+      "simulationMode": "Strict"
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "Allowed",
+      "results": [
+        {
+          "resourceType": "function"
+        }
+      ]
+    }
+  },
+  {
     "name": "Get: 1 with owner other",
     "simulation": {
       "identityPolicies": [
