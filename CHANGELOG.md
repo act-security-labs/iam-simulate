@@ -1,3 +1,10 @@
+## [0.1.209](https://github.com/act-security-labs/iam-simulate/compare/v0.1.208...v0.1.209) (2026-11-24)
+
+
+### Bug Fixes
+
+* avoid guardrail attribution for managed KMS aliases ([#232](https://github.com/act-security-labs/iam-simulate/issues/232)) ([08adae9](https://github.com/act-security-labs/iam-simulate/commit/08adae9951ee440cee58eb2de18ee0a08a63f8da))
+
 ## [0.1.208](https://github.com/act-security-labs/iam-simulate/compare/v0.1.207...v0.1.208) (2026-11-21)
 
 ## [0.1.207](https://github.com/act-security-labs/iam-simulate/compare/v0.1.206...v0.1.207) (2026-11-14)
