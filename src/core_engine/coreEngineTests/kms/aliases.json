@@ -162,7 +162,7 @@
     }
   },
   {
-    "name": "Explicitly denied for AWS-managed alias when identity policy explicitly denies",
+    "name": "Service denial takes precedence over identity denial on an AWS-managed alias",
     "request": {
       "action": "kms:DeleteAlias",
       "resource": {
@@ -190,7 +190,8 @@
       }
     ],
     "expected": {
-      "response": "ExplicitlyDenied"
+      "response": "ImplicitlyDenied",
+      "identityResult": "ExplicitlyDenied"
     }
   }
 ]
