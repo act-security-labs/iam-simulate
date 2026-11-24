@@ -47,10 +47,6 @@ export class KmsServiceAuthorizer extends DefaultServiceAuthorizer {
   public override authorize(request: ServiceAuthorizationRequest): RequestAnalysis {
     const baseResult = super.authorize(request)
 
-    if (baseResult.result === 'ExplicitlyDenied') {
-      return baseResult
-    }
-
     if (
       deniedActionsForAwsManagedAliases.has(request.request.action.value().toLowerCase()) &&
       isAwsManagedAlias(request.request.resource)
@@ -58,6 +54,8 @@ export class KmsServiceAuthorizer extends DefaultServiceAuthorizer {
       return {
         ...baseResult,
         result: 'ImplicitlyDenied',
+        // Removing policy guardrails cannot make a service-blocked request succeed.
+        blockedBy: undefined,
         conditions: undefined
       }
     }
