@@ -1,3 +1,10 @@
+## [0.1.210](https://github.com/act-security-labs/iam-simulate/compare/v0.1.209...v0.1.210) (2026-11-26)
+
+
+### Bug Fixes
+
+* correct OAI S3 guardrail attribution ([#233](https://github.com/act-security-labs/iam-simulate/issues/233)) ([53c4446](https://github.com/act-security-labs/iam-simulate/commit/53c444628be2119dfad604964a08b78760058050))
+
 ## [0.1.209](https://github.com/act-security-labs/iam-simulate/compare/v0.1.208...v0.1.209) (2026-11-24)
 
 
