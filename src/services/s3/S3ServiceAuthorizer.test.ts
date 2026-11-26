@@ -594,7 +594,7 @@ describe('S3ServiceAuthorizer', () => {
       action: 's3:GetObject',
       blockPublicAccess: true,
       expected: 'ExplicitlyDenied',
-      blocker: ['s3-bpa']
+      blocker: ['rcp']
     },
     {
       action: 's3:GetObject',

@@ -1,5 +1,142 @@
 [
   {
+    "name": "External IAM role BPA and RCP retain RCP attribution",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::111111111111:role/Example",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [
+        {
+          "name": "identity",
+          "policy": {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Allow", "Action": "s3:GetObject", "Resource": "*" }]
+          }
+        }
+      ],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [
+        {
+          "orgIdentifier": "o-example",
+          "policies": [
+            {
+              "name": "guardrail",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  { "Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": "*" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          { "Effect": "Allow", "Principal": "*", "Action": "s3:GetObject", "Resource": "*" }
+        ]
+      },
+      "additionalSettings": { "s3": { "blockPublicAccess": true } }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ExplicitlyDenied",
+      "results": [],
+      "analysis": { "blockedBy": ["rcp"] }
+    }
+  },
+  {
+    "name": "OAI BPA and RCP retain RCP attribution like other principals",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:GetObject",
+        "resource": {
+          "resource": "arn:aws:s3:::example-bucket/object",
+          "accountId": "222222222222"
+        },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [
+        {
+          "orgIdentifier": "o-example",
+          "policies": [
+            {
+              "name": "guardrail",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  { "Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": "*" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [
+          { "Effect": "Allow", "Principal": "*", "Action": "s3:GetObject", "Resource": "*" }
+        ]
+      },
+      "additionalSettings": { "s3": { "blockPublicAccess": true } }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ExplicitlyDenied",
+      "results": [],
+      "analysis": { "blockedBy": ["rcp"] }
+    }
+  },
+  {
+    "name": "OAI action cap is independent of RCP denial",
+    "simulation": {
+      "request": {
+        "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+        "action": "s3:PutBucketPolicy",
+        "resource": { "resource": "arn:aws:s3:::example-bucket", "accountId": "222222222222" },
+        "contextVariables": {}
+      },
+      "identityPolicies": [],
+      "serviceControlPolicies": [],
+      "resourceControlPolicies": [
+        {
+          "orgIdentifier": "o-example",
+          "policies": [
+            {
+              "name": "guardrail",
+              "policy": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  { "Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": "*" }
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "resourcePolicy": {
+        "Version": "2012-10-17",
+        "Statement": [{ "Effect": "Allow", "Principal": "*", "Action": "s3:*", "Resource": "*" }]
+      }
+    },
+    "expected": {
+      "resultType": "single",
+      "overallResult": "ImplicitlyDenied",
+      "results": [],
+      "analysis": { "blockedBy": null }
+    }
+  },
+  {
     "name": "OAI discovery preserves the escape condition for an unknown conditional deny",
     "simulation": {
       "request": {

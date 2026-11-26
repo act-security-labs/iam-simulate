@@ -50,15 +50,7 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
       }
     }
 
-    // BPA can independently block an OAI even when an RCP already denies it. Preserve
-    // other explicit blockers rather than replacing their attribution with BPA.
-    const oaiRcpOnly =
-      isOai &&
-      baseResult.blockedBy?.includes('rcp') &&
-      baseResult.blockedBy.every((reason) => reason === 'rcp') &&
-      baseResult.resourceAnalysis?.result === 'Allowed' &&
-      baseResult.identityAnalysis?.result !== 'ExplicitlyDenied'
-    if (baseResult.result !== 'Allowed' && !oaiRcpOnly) {
+    if (baseResult.result !== 'Allowed') {
       return baseResult
     }
 
