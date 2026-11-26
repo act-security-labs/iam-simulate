@@ -1,5 +1,36 @@
 [
   {
+    "name": "OAI action cap prevents RCP blocker attribution",
+    "request": {
+      "action": "s3:PutBucketPolicy",
+      "resource": { "resource": "arn:aws:s3:::example-bucket", "accountId": "222222222222" },
+      "principal": "arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123",
+      "context": {}
+    },
+    "identityPolicies": [],
+    "resourcePolicy": {
+      "Version": "2012-10-17",
+      "Statement": [{ "Effect": "Allow", "Principal": "*", "Action": "s3:*", "Resource": "*" }]
+    },
+    "resourceControlPolicies": [
+      {
+        "orgIdentifier": "o-example",
+        "policies": [
+          {
+            "Version": "2012-10-17",
+            "Statement": [{ "Effect": "Deny", "Principal": "*", "Action": "s3:*", "Resource": "*" }]
+          }
+        ]
+      }
+    ],
+    "expected": {
+      "response": "ImplicitlyDenied",
+      "identityResult": "NotApplicable",
+      "resourceResult": "Allowed",
+      "blockedBy": null
+    }
+  },
+  {
     "name": "OAI is excluded by its own ARN in a NotPrincipal deny",
     "request": {
       "action": "s3:GetObject",

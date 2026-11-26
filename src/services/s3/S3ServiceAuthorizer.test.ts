@@ -491,7 +491,7 @@ describe('S3ServiceAuthorizer', () => {
     expect(authorize(request).result).toBe('ImplicitlyDenied')
   })
 
-  it('preserves a matching explicit deny even outside the OAI action cap', () => {
+  it('retains resource analysis but prioritizes the OAI action cap', () => {
     const principal = 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123'
     const request = authorizationRequest({
       name: 'explicit deny',
@@ -503,7 +503,10 @@ describe('S3ServiceAuthorizer', () => {
       },
       expected: { result: 'ExplicitlyDenied' }
     })
-    expect(authorize(request).result).toBe('ExplicitlyDenied')
+    expect(authorize(request)).toMatchObject({
+      result: 'ImplicitlyDenied',
+      resourceAnalysis: { result: 'ExplicitlyDenied' }
+    })
   })
 
   it('does not allow an OAI to use a non-S3 action, even with supplied identity policies', () => {
@@ -572,6 +575,143 @@ describe('S3ServiceAuthorizer', () => {
     const analysis = authorize(request)
     expect(analysis.result).toBe('ExplicitlyDenied')
     expect(analysis.blockedBy).toContain('rcp')
+  })
+
+  it.each([
+    {
+      action: 's3:PutBucketPolicy',
+      blockPublicAccess: false,
+      expected: 'ImplicitlyDenied',
+      blocker: undefined
+    },
+    {
+      action: 's3:PutBucketPolicy',
+      blockPublicAccess: true,
+      expected: 'ImplicitlyDenied',
+      blocker: undefined
+    },
+    {
+      action: 's3:GetObject',
+      blockPublicAccess: true,
+      expected: 'ExplicitlyDenied',
+      blocker: ['rcp']
+    },
+    {
+      action: 's3:GetObject',
+      blockPublicAccess: false,
+      expected: 'ExplicitlyDenied',
+      blocker: ['rcp']
+    }
+  ])(
+    'attributes OAI blocks according to the independent service controls: $action',
+    ({ action, blockPublicAccess, expected, blocker }) => {
+      //Given a public bucket policy and RCP denying a collected OAI's request
+      const request = authorizationRequest({
+        name: 'independent OAI block',
+        principal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+        action,
+        blockPublicAccess,
+        resourcePolicy: publicBucketPolicy(),
+        expected: { result: 'ExplicitlyDenied' }
+      })
+      request.resourceControlPolicies = [
+        {
+          orgIdentifier: 'o-example',
+          policies: [
+            loadPolicy(
+              {
+                Version: '2012-10-17',
+                Statement: [{ Effect: 'Deny', Principal: '*', Action: 's3:*', Resource: '*' }]
+              },
+              { name: 'rcp' }
+            )
+          ]
+        }
+      ]
+      //When authorizing the request
+      const result = authorize(request)
+      //Then the service block takes precedence while retaining policy analysis
+      expect(result.result).toBe(expected)
+      expect(result.blockedBy).toEqual(blocker)
+      expect(result.rcpAnalysis?.result).toBe('ExplicitlyDenied')
+    }
+  )
+
+  it('does not attribute BPA when the public policy grants a different object', () => {
+    //Given an OAI and a public policy that does not match the requested object
+    const request = authorizationRequest({
+      name: 'unmatched public policy',
+      principal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      blockPublicAccess: true,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Effect: 'Allow',
+            Principal: '*',
+            Action: 's3:GetObject',
+            Resource: 'arn:aws:s3:::example-bucket/other/*'
+          }
+        ]
+      },
+      expected: { result: 'ExplicitlyDenied' }
+    })
+    request.resourceControlPolicies = [
+      {
+        orgIdentifier: 'o-example',
+        policies: [
+          loadPolicy(
+            {
+              Version: '2012-10-17',
+              Statement: [{ Effect: 'Deny', Principal: '*', Action: 's3:*', Resource: '*' }]
+            },
+            { name: 'rcp' }
+          )
+        ]
+      }
+    ]
+    //When the request is evaluated
+    const result = authorize(request)
+    //Then a nonmatching grant does not introduce a BPA blocker
+    expect(result.resourceAnalysis?.result).toBe('ImplicitlyDenied')
+    expect(result.blockedBy ?? []).not.toContain('s3-bpa')
+  })
+
+  it('preserves a resource-policy deny when BPA and an RCP also apply', () => {
+    //Given an OAI and a public bucket with an independent explicit resource deny
+    const request = authorizationRequest({
+      name: 'resource deny',
+      principal: 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity E123',
+      blockPublicAccess: true,
+      resourcePolicy: {
+        Version: '2012-10-17',
+        Statement: [
+          { Effect: 'Allow', Principal: '*', Action: 's3:GetObject', Resource: '*' },
+          { Effect: 'Deny', Principal: '*', Action: 's3:GetObject', Resource: '*' }
+        ]
+      },
+      expected: { result: 'ExplicitlyDenied' }
+    })
+    request.resourceControlPolicies = [
+      {
+        orgIdentifier: 'o-example',
+        policies: [
+          loadPolicy(
+            {
+              Version: '2012-10-17',
+              Statement: [{ Effect: 'Deny', Principal: '*', Action: 's3:*', Resource: '*' }]
+            },
+            { name: 'rcp' }
+          )
+        ]
+      }
+    ]
+    //When authorizing the request
+    const result = authorize(request)
+    //Then the resource policy remains a blocker
+    expect(result.result).toBe('ExplicitlyDenied')
+    expect(result.resourceAnalysis?.result).toBe('ExplicitlyDenied')
+    expect(result.blockedBy ?? []).not.toContain('s3-bpa')
   })
 
   it.each(s3BpaRuntimeCases)('$name', (testCase) => {

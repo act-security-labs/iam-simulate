@@ -39,17 +39,19 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
   public override authorize(request: ServiceAuthorizationRequest): RequestAnalysis {
     const baseResult = super.authorize(request)
 
-    if (baseResult.result !== 'Allowed') {
-      return baseResult
+    const principal = request.request.principal
+    const isOai = principal.isAuthenticated() && isCloudFrontOriginAccessUserArn(principal.value())
+    if (isOai && !oaiAllowedActions.has(request.request.action.action().toLowerCase())) {
+      return {
+        ...baseResult,
+        result: 'ImplicitlyDenied',
+        blockedBy: undefined,
+        conditions: undefined
+      }
     }
 
-    const principal = request.request.principal
-    if (
-      principal.isAuthenticated() &&
-      isCloudFrontOriginAccessUserArn(principal.value()) &&
-      !oaiAllowedActions.has(request.request.action.action().toLowerCase())
-    ) {
-      return { ...baseResult, result: 'ImplicitlyDenied', conditions: undefined }
+    if (baseResult.result !== 'Allowed') {
+      return baseResult
     }
 
     if (!isStandardS3BucketResource(request.request.resource.value())) {
@@ -77,7 +79,7 @@ export class S3ServiceAuthorizer extends DefaultServiceAuthorizer {
       return baseResult
     }
 
-    // The base result is Allowed here, so there are no prior blocking reasons to merge.
+    // BPA independently blocks this public-policy grant; retain the policy analyses.
     return {
       ...baseResult,
       result: 'ExplicitlyDenied',
